@@ -1,0 +1,3521 @@
+﻿
+
+
+
+
+
+
+
+
+
+
+
+📈  REAL-TIME STOCK MARKET SIMULATOR
+
+COMPLETE IMPLEMENTATION BLUEPRINT
+
+─────────────────────────────────────────────
+
+Simulating Real Markets  ·  NSE India Live Data  ·  Zero Financial Risk  ·  MERN + Socket.io
+
+🏗️  TECH STACK
+
+MERN + Socket.io
+
+React · Node · MongoDB
+
+📊  LIVE DATA
+
+NSE India (Real)
+
+Yahoo Finance API
+
+🔄  REAL-TIME
+
+Socket.io WSS
+
+15-second price ticks
+
+🚀  PHASES
+
+8 Build Phases
+
+~8 Weeks to Ship
+
+
+
+Trade virtual money. Feel real markets. Learn everything.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Section 1  ·  Introduction & Vision
+
+The Real-Time Stock Market Simulator is a full-stack MERN web application that replicates the experience of live stock trading — using real market prices from the National Stock Exchange of India (NSE) — while removing the financial risk entirely. Users trade with virtual money (₹1,00,000 starting balance) against actual, live-ticking stock prices.
+
+1.1  Project Vision Statement
+
+"Build a platform where a complete beginner can experience buying TCS at ₹3,842 and selling it at ₹3,917, see their portfolio go green, and compete on a real leaderboard — all without risking a single rupee."
+
+1.2  Problem Statement (From Document)
+
+🚫
+
+Many beginners lack practical, hands-on experience in stock trading
+
+
+
+💸
+
+Fear of financial losses stops people from entering the real market
+
+
+
+📉
+
+New investors do not understand how market behavior and price fluctuation works
+
+
+
+🧪
+
+There is no safe sandbox environment to experiment with strategies and learn from mistakes
+
+
+
+1.3  The Solution — How This Simulator Solves It
+
+
+
+Feature
+
+How It Solves the Problem
+
+
+
+✅
+
+Virtual ₹1,00,000 Balance
+
+Users trade with fake money but real stakes — every loss teaches, every gain motivates
+
+
+
+✅
+
+Live NSE India Prices
+
+Prices from RELIANCE.NS, TCS.NS, INFY.NS — real ticks, 15-second delay via Yahoo Finance
+
+
+
+✅
+
+Real-Time Socket Updates
+
+Prices update live on screen — mimics the real trading terminal experience exactly
+
+
+
+✅
+
+Portfolio & P&L Tracking
+
+Users see exactly which trades made or lost them money — builds pattern recognition
+
+
+
+✅
+
+Leaderboard Competition
+
+Ranking against peers creates urgency and motivation to improve trading discipline
+
+
+
+✅
+
+Trade History & Analytics
+
+Full transaction log + profit/loss charts = powerful post-trade self-review tool
+
+
+
+Section 2  ·  System Architecture
+
+The platform is built on a MERN stack with an additional real-time layer. Every component from the document is implemented here with full detail on how they connect.
+
+2.1  Full Architecture Overview — All Layers
+
+
+
+Layer
+
+Technology
+
+Responsibility
+
+
+
+①
+
+CLIENT
+
+React.js + Tailwind CSS
+
+Trading dashboard, stock list, portfolio, leaderboard, charts — all UI interactions
+
+
+
+②
+
+API GATEWAY
+
+Express Router + Middleware
+
+Routes all REST calls, validates JWT, rate-limits, logs — bridge between UI and services
+
+
+
+③
+
+AUTH SERVICE
+
+JWT + Bcrypt.js
+
+Register/Login, token issue/validation, role-based access (user vs admin)
+
+
+
+④
+
+TRADING SERVICE
+
+Node.js Business Logic
+
+Buy/Sell order processing, balance validation, real-time price execution
+
+
+
+⑤
+
+MARKET DATA SERVICE
+
+Yahoo Finance + node-fetch
+
+Polls NSE prices every 15s, normalizes JSON, updates in-memory cache
+
+
+
+⑥
+
+PORTFOLIO SERVICE
+
+Mongoose Aggregation
+
+Holdings tracking, average cost calculation, unrealised P&L computation
+
+
+
+⑦
+
+LEADERBOARD SERVICE
+
+MongoDB Aggregation Pipeline
+
+Ranks all users by total portfolio value every 60s
+
+
+
+⑧
+
+REAL-TIME LAYER
+
+Socket.io (WSS)
+
+Broadcasts live price ticks to all clients; pushes trade confirmations to user rooms
+
+
+
+⑨
+
+DATABASE
+
+MongoDB Atlas
+
+Persists users, stocks, transactions, portfolios, leaderboard snapshots
+
+
+
+⑩
+
+DEPLOYMENT
+
+Vercel + Render + Atlas
+
+Frontend on Vercel CDN, Backend on Render, DB on Atlas (all free tier)
+
+
+
+2.2  Data Flow Diagram (Text Representation)
+
+BROWSER (React)  ←→  Socket.io WebSocket  ←→  Node/Express Server  ←→  Yahoo Finance API (HTTPS every 15s)
+
+BROWSER (React)  →→→  REST API (HTTPS)  →→→  Express Server  →→→  MongoDB Atlas  →→→  Response to Browser
+
+PRICE WORKER: setInterval(15000ms)  →  fetch('Yahoo Finance')  →  update Stock cache  →  socket.emit('price_update')  →  all clients
+
+2.3  Microservices Described (From Document)
+
+SERVICE NAME
+
+FULL DESCRIPTION
+
+
+
+User Interface (React.js)
+
+Frontend where users interact. Views stock prices, executes trades, monitors portfolio. Receives real-time updates via Socket.io events in a reactive UI.
+
+
+
+Web Server (Express.js)
+
+Handles incoming HTTP requests from the UI. Manages routing and forwards to the API Gateway. Acts as bridge between frontend and all backend services.
+
+
+
+API Gateway
+
+Routes requests to the correct backend service. Performs JWT validation, input sanitisation, and response formatting. Ensures smooth, consistent communication.
+
+
+
+Auth & Access Control Service
+
+Manages user authentication and authorization. Verifies credentials with bcrypt, issues JWTs, assigns user/admin roles, protects all private routes.
+
+
+
+Profile & Portfolio Management Service
+
+Manages user profiles, virtual balances, and portfolio data. Stores holdings, average cost per stock, and account details. Enables investment tracking.
+
+
+
+Simulated Trading & Order Service
+
+Handles BUY and SELL orders with virtual currency. Fetches live NSE price at execution, validates balance/holdings, processes the trade, and updates portfolio atomically.
+
+
+
+Real-Time Market Data Service
+
+Fetches live NSE stock prices from Yahoo Finance every 15 seconds. Broadcasts price_update socket events to all connected clients. Ensures users see current data.
+
+
+
+Leaderboard & Analytics Service
+
+Tracks user performance. Calculates total portfolio value (cash + live holdings). Ranks users. Generates P&L charts, trade frequency stats, and sector allocation analytics.
+
+
+
+Real-Time Trading Dashboard
+
+Frontend module displaying live market data, user balance, portfolio overview, and trending stocks. The central hub for all trading activity.
+
+
+
+Active Orders & Portfolio View
+
+Shows current holdings, avg buy price, live price, unrealised P&L per stock, and overall portfolio allocation. Updates in real time via socket events.
+
+
+
+Profit/Loss Analysis & Report
+
+Calculates and visualises both realised and unrealised P&L. Shows daily P&L trends, win/loss rate, best/worst trades. Helps users evaluate strategy effectiveness.
+
+
+
+User Trading History
+
+Stores and displays every past trade. Filterable by date, stock, type (buy/sell). Supports CSV export. Used for performance analysis and review.
+
+
+
+Trading Simulator Settings
+
+Allows users to customise simulation parameters: max trade size, notifications, display preferences, reset balance option. Admin can control market hours.
+
+
+
+User & Admin Accounts
+
+Manages user identity, roles (user/admin), login credentials, and access permissions. Admin can view all users, reset balances, and manage the stock universe.
+
+
+
+Section 3  ·  Complete Technology Stack
+
+Every technology mentioned in the document is listed here with its exact version, purpose, and installation command.
+
+CATEGORY
+
+TECHNOLOGY
+
+PURPOSE
+
+VERSION
+
+INSTALL CMD
+
+
+
+FRONTEND
+
+React.js
+
+UI framework, component-based
+
+v18+
+
+npm create vite@latest
+
+
+
+FRONTEND
+
+Tailwind CSS
+
+Utility-first styling
+
+v3
+
+npm i tailwindcss
+
+
+
+FRONTEND
+
+Axios
+
+HTTP client for REST API calls
+
+v1.x
+
+npm i axios
+
+
+
+FRONTEND
+
+Socket.io-client
+
+Real-time price updates WS
+
+v4
+
+npm i socket.io-client
+
+
+
+FRONTEND
+
+Recharts
+
+P&L and price charts
+
+v2
+
+npm i recharts
+
+
+
+FRONTEND
+
+React Query
+
+Server state & cache mgmt
+
+v5
+
+npm i @tanstack/react-query
+
+
+
+FRONTEND
+
+React Router
+
+SPA navigation/routing
+
+v6
+
+npm i react-router-dom
+
+
+
+BACKEND
+
+Node.js
+
+JavaScript runtime
+
+v20 LTS
+
+nodejs.org/download
+
+
+
+BACKEND
+
+Express.js
+
+Web framework, REST routes
+
+v4
+
+npm i express
+
+
+
+BACKEND
+
+Socket.io
+
+Real-time WSS server
+
+v4
+
+npm i socket.io
+
+
+
+BACKEND
+
+node-fetch
+
+HTTP calls to Yahoo Finance
+
+v3
+
+npm i node-fetch
+
+
+
+DATABASE
+
+MongoDB Atlas
+
+Cloud NoSQL database
+
+v7
+
+cloud.mongodb.com
+
+
+
+DATABASE
+
+Mongoose
+
+ODM, schema validation
+
+v8
+
+npm i mongoose
+
+
+
+AUTH
+
+JWT (jsonwebtoken)
+
+Stateless token auth
+
+v9
+
+npm i jsonwebtoken
+
+
+
+AUTH
+
+Bcrypt.js
+
+Password hashing
+
+v2
+
+npm i bcryptjs
+
+
+
+SECURITY
+
+Helmet.js
+
+Secure HTTP headers
+
+v7
+
+npm i helmet
+
+
+
+SECURITY
+
+express-rate-limit
+
+API rate limiting
+
+v7
+
+npm i express-rate-limit
+
+
+
+SECURITY
+
+cors
+
+CORS policy enforcement
+
+v2
+
+npm i cors
+
+
+
+VALIDATION
+
+Joi
+
+Request body validation
+
+v17
+
+npm i joi
+
+
+
+DEV TOOLS
+
+VS Code
+
+Code editor
+
+Latest
+
+code.visualstudio.com
+
+
+
+DEV TOOLS
+
+Postman
+
+API testing & debugging
+
+Latest
+
+postman.com
+
+
+
+DEV TOOLS
+
+Git & GitHub
+
+Version control
+
+Latest
+
+git-scm.com
+
+
+
+MARKET API
+
+Yahoo Finance
+
+NSE live stock prices (FREE)
+
+Public
+
+No install needed
+
+
+
+Section 4  ·  Database Schema (All Collections)
+
+All four collections from the document are expanded here with every field, data type, constraint, and purpose. Virtual starting balance is ₹1,00,000 INR.
+
+4.1  👤  Users Collection
+
+FIELD
+
+TYPE
+
+REQUIRED
+
+DEFAULT
+
+DESCRIPTION
+
+
+
+_id
+
+ObjectId
+
+Auto
+
+—
+
+MongoDB primary key, auto-generated
+
+
+
+name
+
+String
+
+✅ Yes
+
+—
+
+Full display name of the user
+
+
+
+email
+
+String
+
+✅ Yes
+
+—
+
+Unique, lowercase, indexed — used for login
+
+
+
+passwordHash
+
+String
+
+✅ Yes
+
+—
+
+Bcrypt hash (saltRounds:12). NEVER returned in API responses
+
+
+
+virtualBalance
+
+Number
+
+✅ Yes
+
+100000
+
+Current available cash in INR. Deducted on BUY, credited on SELL
+
+
+
+totalDeposited
+
+Number
+
+✅ Yes
+
+100000
+
+Always 100000 — baseline for calculating overall return %
+
+
+
+role
+
+String
+
+No
+
+'user'
+
+Enum: 'user' | 'admin'. Admin can manage stocks and users
+
+
+
+avatar
+
+String
+
+No
+
+null
+
+URL to profile image. Default: auto-generated initials avatar
+
+
+
+lastLogin
+
+Date
+
+No
+
+null
+
+Updated on every successful login for analytics
+
+
+
+isActive
+
+Boolean
+
+No
+
+true
+
+Soft-delete flag. false = account suspended by admin
+
+
+
+createdAt
+
+Date
+
+Auto
+
+now()
+
+Mongoose timestamps: auto-populated on creation
+
+
+
+updatedAt
+
+Date
+
+Auto
+
+now()
+
+Mongoose timestamps: auto-updated on every save
+
+
+
+4.2  📊  Stocks Collection (Live Price Cache)
+
+FIELD
+
+TYPE
+
+REQUIRED
+
+DEFAULT
+
+DESCRIPTION
+
+
+
+_id
+
+ObjectId
+
+Auto
+
+—
+
+MongoDB primary key
+
+
+
+symbol
+
+String
+
+✅ Yes
+
+—
+
+NSE symbol with .NS suffix. e.g. RELIANCE.NS, TCS.NS — unique, indexed
+
+
+
+shortName
+
+String
+
+✅ Yes
+
+—
+
+Company display name e.g. Reliance Industries Ltd
+
+
+
+exchange
+
+String
+
+✅ Yes
+
+'NSE'
+
+Enum: 'NSE' | 'BSE'. Determines API suffix used
+
+
+
+sector
+
+String
+
+No
+
+null
+
+e.g. IT, Banking, Energy, FMCG, Auto, Pharma, Metals
+
+
+
+currentPrice
+
+Number
+
+✅ Yes
+
+—
+
+Updated every 15s from Yahoo Finance regularMarketPrice
+
+
+
+previousClose
+
+Number
+
+No
+
+null
+
+Yesterday's closing price from Yahoo Finance
+
+
+
+dayHigh
+
+Number
+
+No
+
+null
+
+Today's highest price — from Yahoo regularMarketDayHigh
+
+
+
+dayLow
+
+Number
+
+No
+
+null
+
+Today's lowest price — from Yahoo regularMarketDayLow
+
+
+
+volume
+
+Number
+
+No
+
+null
+
+Shares traded today — from Yahoo regularMarketVolume
+
+
+
+changeAmount
+
+Number
+
+No
+
+null
+
+Price change from previous close (can be negative)
+
+
+
+changePercent
+
+Number
+
+No
+
+null
+
+% change from previous close. Used for color-coding in UI
+
+
+
+marketCap
+
+Number
+
+No
+
+null
+
+Market cap in INR — from Yahoo Finance
+
+
+
+lastUpdated
+
+Date
+
+✅ Yes
+
+—
+
+Timestamp of most recent Yahoo Finance successful fetch
+
+
+
+4.3  💳  Transactions Collection
+
+FIELD
+
+TYPE
+
+REQUIRED
+
+DEFAULT
+
+DESCRIPTION
+
+
+
+_id
+
+ObjectId
+
+Auto
+
+—
+
+MongoDB primary key
+
+
+
+userId
+
+ObjectId
+
+✅ Yes
+
+—
+
+Ref: Users collection — indexed for fast history queries
+
+
+
+symbol
+
+String
+
+✅ Yes
+
+—
+
+e.g. TCS.NS — snapshot at time of trade
+
+
+
+stockName
+
+String
+
+✅ Yes
+
+—
+
+Company name snapshot at time of trade (denormalised for history display)
+
+
+
+type
+
+String
+
+✅ Yes
+
+—
+
+Enum: 'BUY' | 'SELL' — determines debit or credit
+
+
+
+quantity
+
+Number
+
+✅ Yes
+
+—
+
+Number of shares bought or sold. Must be ≥ 1
+
+
+
+pricePerShare
+
+Number
+
+✅ Yes
+
+—
+
+LIVE price from Yahoo Finance at exact moment of execution
+
+
+
+totalAmount
+
+Number
+
+✅ Yes
+
+—
+
+quantity × pricePerShare — total cost or proceeds
+
+
+
+balanceBefore
+
+Number
+
+✅ Yes
+
+—
+
+User's virtual balance snapshot immediately before this trade
+
+
+
+balanceAfter
+
+Number
+
+✅ Yes
+
+—
+
+User's virtual balance snapshot immediately after this trade
+
+
+
+realisedPnL
+
+Number
+
+No
+
+null
+
+SELL orders only: (sellPrice − avgCostPrice) × quantity
+
+
+
+executedAt
+
+Date
+
+Auto
+
+now()
+
+Timestamp of order execution — Mongoose timestamps
+
+
+
+4.4  💼  Portfolio Collection
+
+FIELD
+
+TYPE
+
+REQUIRED
+
+DEFAULT
+
+DESCRIPTION
+
+
+
+_id
+
+ObjectId
+
+Auto
+
+—
+
+MongoDB primary key
+
+
+
+userId
+
+ObjectId
+
+✅ Yes
+
+—
+
+Ref: Users — indexed. Compound index with symbol
+
+
+
+symbol
+
+String
+
+✅ Yes
+
+—
+
+e.g. INFY.NS — compound unique index with userId
+
+
+
+stockName
+
+String
+
+✅ Yes
+
+—
+
+Denormalised company name for fast display
+
+
+
+quantity
+
+Number
+
+✅ Yes
+
+—
+
+Current number of shares held. Set to 0 when position fully sold
+
+
+
+averageCostPrice
+
+Number
+
+✅ Yes
+
+—
+
+Weighted average buy price across all BUY orders for this stock
+
+
+
+totalInvested
+
+Number
+
+✅ Yes
+
+—
+
+averageCostPrice × quantity — total capital deployed in this stock
+
+
+
+sector
+
+String
+
+No
+
+null
+
+Inherited from Stocks collection for sector allocation charts
+
+
+
+firstBought
+
+Date
+
+No
+
+null
+
+Date of first BUY order for this stock (for holding period calc)
+
+
+
+updatedAt
+
+Date
+
+Auto
+
+now()
+
+Auto-updated every time a trade occurs on this stock
+
+
+
+4.5  🏆  Leaderboard Snapshots Collection (Bonus)
+
+FIELD
+
+TYPE
+
+DESCRIPTION
+
+NOTES
+
+
+
+userId
+
+ObjectId
+
+Ref: Users
+
+Indexed
+
+
+
+userName
+
+String
+
+Snapshot of name at time of snapshot
+
+Avoids JOIN
+
+
+
+rank
+
+Number
+
+Position on leaderboard at this moment
+
+1 = top
+
+
+
+totalPortfolioValue
+
+Number
+
+Cash balance + live value of all holdings
+
+In INR
+
+
+
+totalPnL
+
+Number
+
+totalPortfolioValue − 100000
+
+Signed number
+
+
+
+pnlPercent
+
+Number
+
+(totalPnL / 100000) × 100
+
+Display as %
+
+
+
+snapshotAt
+
+Date
+
+Auto-created every 60 seconds
+
+Used for trend charts
+
+
+
+Section 5  ·  Complete Project Folder Structure
+
+5.1  Backend (Node.js / Express.js)
+
+server/
+
+├── app.js                         → Express app init, Socket.io setup, middleware chain
+
+├── server.js                       → HTTP server entry point, PORT binding
+
+├── .env                            → MONGO_URI, JWT_SECRET, PORT, FRONTEND_URL
+
+│
+
+├── config/
+
+│   ├── db.js                       → MongoDB Atlas connection with retry logic
+
+│   └── env.js                      → Centralised environment variable validation
+
+│
+
+├── models/                         → All Mongoose schemas
+
+│   ├── User.model.js               → Users collection schema
+
+│   ├── Stock.model.js              → Stocks collection schema
+
+│   ├── Transaction.model.js        → Transactions collection schema
+
+│   ├── Portfolio.model.js          → Portfolio collection schema
+
+│   └── Leaderboard.model.js        → Leaderboard snapshots schema
+
+│
+
+├── controllers/                    → Business logic (thin routes, fat controllers)
+
+│   ├── auth.controller.js          → register, login, getMe, resetBalance
+
+│   ├── market.controller.js        → getStocks, getStockDetail, getHistory, search
+
+│   ├── trade.controller.js         → buyStock, sellStock, getTradeHistory
+
+│   ├── portfolio.controller.js     → getHoldings, getSummary, getAllocation
+
+│   ├── leaderboard.controller.js   → getLeaderboard, getMyRank
+
+│   └── analytics.controller.js     → getPnLChart, getTradeStats
+
+│
+
+├── routes/                         → Express Router definitions
+
+│   ├── auth.routes.js              → /api/auth/*
+
+│   ├── market.routes.js            → /api/market/*
+
+│   ├── trade.routes.js             → /api/trade/* (protected)
+
+│   ├── portfolio.routes.js         → /api/portfolio/* (protected)
+
+│   ├── leaderboard.routes.js       → /api/leaderboard/*
+
+│   └── analytics.routes.js         → /api/analytics/* (protected)
+
+│
+
+├── middleware/
+
+│   ├── auth.middleware.js          → verifyJWT() — used on all protected routes
+
+│   ├── validate.middleware.js      → Joi schema validation wrapper
+
+│   ├── rateLimiter.middleware.js   → 100 req/15min global, 10 trades/min per user
+
+│   └── errorHandler.middleware.js  → Global error handler (catches all throws)
+
+│
+
+├── services/
+
+│   ├── yahooFinance.service.js     → All Yahoo Finance API calls (single, batch, history)
+
+│   └── leaderboard.service.js      → Portfolio value calculation + ranking logic
+
+│
+
+├── workers/
+
+│   └── priceIngestion.worker.js    → setInterval(15000) → fetch → update → emit
+
+│
+
+├── socket/
+
+│   └── socket.handler.js           → All Socket.io event listeners and emitters
+
+│
+
+└── utils/
+
+├── tradeCalculations.js        → buyOrder(), sellOrder(), calcPnL() pure functions
+
+└── formatCurrency.js           → formatINR(), formatPercent() helpers
+
+5.2  Frontend (React.js + Vite)
+
+client/src/
+
+├── main.jsx                        → App entry, QueryClientProvider, Router wrap
+
+├── App.jsx                         → Route definitions + Auth/Socket providers
+
+│
+
+├── api/                            → Axios instance + all API call functions
+
+│   ├── axiosInstance.js            → Base URL, interceptors, JWT header injection
+
+│   ├── auth.api.js                 → login(), register(), getMe()
+
+│   ├── market.api.js               → getStocks(), getStockDetail(), searchSymbol()
+
+│   ├── trade.api.js                → buyStock(), sellStock(), getHistory()
+
+│   ├── portfolio.api.js            → getHoldings(), getSummary()
+
+│   └── leaderboard.api.js          → getLeaderboard(), getMyRank()
+
+│
+
+├── context/
+
+│   ├── AuthContext.jsx             → JWT storage, user state, login/logout
+
+│   └── SocketContext.jsx           → Socket.io client, connection, event listeners
+
+│
+
+├── hooks/                          → Reusable React custom hooks
+
+│   ├── useLivePrice.js             → Subscribes to socket price_update for a symbol
+
+│   ├── usePortfolio.js             → React Query hook for portfolio data
+
+│   └── useLeaderboard.js           → React Query hook for leaderboard
+
+│
+
+├── pages/                          → One folder per page/route
+
+│   ├── Auth/                       → Login.jsx, Register.jsx
+
+│   ├── Dashboard/                  → Dashboard.jsx (main hub)
+
+│   ├── Market/                     → MarketPage.jsx, StockDetail.jsx
+
+│   ├── Portfolio/                  → PortfolioPage.jsx
+
+│   ├── Analytics/                  → AnalyticsPage.jsx
+
+│   ├── Leaderboard/                → LeaderboardPage.jsx
+
+│   └── History/                    → HistoryPage.jsx
+
+│
+
+├── components/                     → Reusable UI components
+
+│   ├── Navbar/                     → Navbar.jsx — balance, live clock, avatar, logout
+
+│   ├── LivePriceBadge/             → Animated green/red price + change%
+
+│   ├── OrderModal/                 → Buy/Sell modal with qty, estimated cost, confirm
+
+│   ├── TickerBar/                  → Horizontal scrolling live price ticker
+
+│   ├── StockTable/                 → Sortable/filterable stock list
+
+│   ├── PriceChart/                 → Recharts line chart for stock history
+
+│   ├── PnLCard/                    → Shows green/red P&L with % and rupee amount
+
+│   ├── PortfolioTable/             → Holdings table with live P&L
+
+│   └── LeaderboardTable/           → Ranked users table with sparklines
+
+│
+
+└── utils/
+
+├── formatINR.js                → Format number as ₹1,00,000
+
+├── pnlColor.js                 → Returns 'text-green-500' or 'text-red-500'
+
+└── dateFormat.js               → Human-readable trade timestamps
+
+Section 6  ·  Live NSE India Market Data Integration
+
+Yahoo Finance provides free, no-key-required REST endpoints returning real-time NSE stock quotes with ~15 second delay. This is the engine powering every price in the simulator.
+
+6.1  Yahoo Finance Endpoints Used
+
+PURPOSE
+
+URL
+
+WHEN CALLED
+
+KEY FIELD
+
+
+
+Single stock quote
+
+https://query1.finance.yahoo.com/v8/finance/chart/RELIANCE.NS
+
+Every 15s by worker
+
+regularMarketPrice
+
+
+
+Batch quotes (20 stocks)
+
+https://query1.finance.yahoo.com/v7/finance/quote?symbols=TCS.NS,INFY.NS,HDFCBANK.NS
+
+Every 15s by worker
+
+regularMarketPrice
+
+
+
+Historical OHLCV
+
+https://query1.finance.yahoo.com/v8/finance/chart/TCS.NS?range=1d&interval=5m
+
+On chart page load
+
+timestamp + close[]
+
+
+
+Symbol search
+
+https://query2.finance.yahoo.com/v1/finance/search?q=WIPRO
+
+On user search input
+
+quotes[].symbol
+
+
+
+6.2  Default Stock Universe — NIFTY 50 Top 20
+
+SYMBOL (.NS)
+
+COMPANY
+
+SECTOR
+
+WHY INCLUDED
+
+
+
+RELIANCE.NS
+
+Reliance Industries Ltd
+
+Energy
+
+Largest Indian company by market cap
+
+
+
+TCS.NS
+
+Tata Consultancy Services
+
+IT
+
+India's most valuable IT stock
+
+
+
+INFY.NS
+
+Infosys Ltd
+
+IT
+
+High volume, very widely tracked
+
+
+
+HDFCBANK.NS
+
+HDFC Bank Ltd
+
+Banking
+
+Most liquid private bank stock
+
+
+
+ICICIBANK.NS
+
+ICICI Bank Ltd
+
+Banking
+
+Highly popular retail banking stock
+
+
+
+WIPRO.NS
+
+Wipro Ltd
+
+IT
+
+Strong mid-cap tech play
+
+
+
+SBIN.NS
+
+State Bank of India
+
+Banking
+
+PSU banking giant, high retail interest
+
+
+
+TATAMOTORS.NS
+
+Tata Motors Ltd
+
+Auto
+
+High volatility, exciting for learners
+
+
+
+TATASTEEL.NS
+
+Tata Steel Ltd
+
+Metals
+
+Cyclical commodity stock
+
+
+
+HINDUNILVR.NS
+
+Hindustan Unilever
+
+FMCG
+
+Defensive stock, low volatility
+
+
+
+BAJFINANCE.NS
+
+Bajaj Finance Ltd
+
+Finance
+
+High-growth NBFC, very active stock
+
+
+
+ADANIENT.NS
+
+Adani Enterprises
+
+Conglomerate
+
+High momentum, news-driven price action
+
+
+
+MARUTI.NS
+
+Maruti Suzuki India
+
+Auto
+
+Auto sector bellwether
+
+
+
+SUNPHARMA.NS
+
+Sun Pharmaceutical
+
+Pharma
+
+Largest Indian pharma company
+
+
+
+ONGC.NS
+
+ONGC Ltd
+
+Energy
+
+PSU energy stock
+
+
+
+POWERGRID.NS
+
+Power Grid Corporation
+
+Utilities
+
+Steady dividend-paying stock
+
+
+
+COALINDIA.NS
+
+Coal India Ltd
+
+Mining
+
+PSU commodity, good for sector diversity
+
+
+
+NTPC.NS
+
+NTPC Ltd
+
+Utilities
+
+Power sector, low volatility
+
+
+
+LT.NS
+
+Larsen & Toubro Ltd
+
+Infrastructure
+
+Infrastructure mega-cap
+
+
+
+AXISBANK.NS
+
+Axis Bank Ltd
+
+Banking
+
+Active private sector bank stock
+
+
+
+Section 7  ·  Complete REST API Contracts
+
+7.1  Auth Routes  [ /api/auth ]
+
+METHOD
+
+ENDPOINT
+
+BODY / PARAMS
+
+RESPONSE / LOGIC
+
+
+
+POST
+
+/register
+
+{ name, email, password }
+
+201: { user: {id,name,email,balance}, token }  |  400: validation error  |  409: email exists
+
+
+
+POST
+
+/login
+
+{ email, password }
+
+200: { user, token }  |  401: invalid credentials  |  403: account suspended
+
+
+
+GET
+
+/me
+
+Header: Bearer <token>
+
+200: { user object (no password) }  |  401: missing/expired token
+
+
+
+PUT
+
+/reset-balance
+
+Header: Bearer <token>
+
+200: balance reset to ₹1,00,000  |  Closes all open positions  |  Clears transactions
+
+
+
+PUT
+
+/update-profile
+
+{ name, avatar }  + Bearer token
+
+200: { updatedUser }  |  Validates name length, URL format for avatar
+
+
+
+7.2  Market Data Routes  [ /api/market ]
+
+METHOD
+
+ENDPOINT
+
+PARAMS
+
+RESPONSE
+
+
+
+GET
+
+/stocks
+
+page, limit, sector, search
+
+Paginated list of all tracked stocks with currentPrice, change%, volume
+
+
+
+GET
+
+/stocks/:symbol
+
+symbol e.g. TCS.NS
+
+Full stock detail: price, OHLC, volume, changePercent, sector, marketCap
+
+
+
+GET
+
+/stocks/:symbol/history
+
+range=1d|5d|1mo&interval=5m|1h
+
+Array of { timestamp, open, high, low, close, volume } for Recharts
+
+
+
+GET
+
+/search
+
+q=search string
+
+Matching NSE/BSE symbols from Yahoo Finance v1/finance/search
+
+
+
+GET
+
+/nifty50
+
+none
+
+All 20 default stocks with current live prices in single response
+
+
+
+GET
+
+/sectors
+
+none
+
+List of unique sectors with stock count and average day change%
+
+
+
+7.3  Trading Routes  [ /api/trade ]  — 🔒 JWT Protected
+
+METHOD
+
+ENDPOINT
+
+BODY
+
+BUSINESS LOGIC
+
+
+
+POST
+
+/buy
+
+{ symbol, quantity }
+
+1) Fetch live price from Yahoo  2) Validate balance ≥ qty×price  3) Atomic deduct balance  4) Create Transaction  5) Upsert Portfolio with new avgCost  6) Emit trade_confirmed
+
+
+
+POST
+
+/sell
+
+{ symbol, quantity }
+
+1) Validate holdings ≥ qty  2) Fetch live price  3) Calc realisedPnL=(price−avgCost)×qty  4) Credit balance  5) Create Transaction  6) Update Portfolio qty  7) Emit trade_confirmed
+
+
+
+GET
+
+/history
+
+page, limit, type=BUY|SELL
+
+Paginated trade history for logged-in user. Newest first. Includes realisedPnL for SELL rows
+
+
+
+DELETE
+
+/cancel/:txId
+
+txId in URL
+
+Cancel a BUY within 5 seconds of placement (undo feature). Refunds balance.
+
+
+
+7.4  Portfolio & Analytics Routes  — 🔒 JWT Protected
+
+METHOD
+
+ENDPOINT
+
+DESCRIPTION
+
+
+
+GET
+
+/api/portfolio
+
+All holdings with live unrealised P&L: (livePrice − avgCost) × qty per stock
+
+
+
+GET
+
+/api/portfolio/summary
+
+Dashboard header: totalPortfolioValue, cashBalance, totalInvested, unrealisedPnL, unrealisedPnL%
+
+
+
+GET
+
+/api/portfolio/allocation
+
+Sector-wise % breakdown for pie chart: [ {sector, value, percent} ]
+
+
+
+GET
+
+/api/analytics/pnl
+
+Daily P&L time series for the last 30 days — used for the Analytics line chart
+
+
+
+GET
+
+/api/analytics/trades
+
+Trade stats: totalTrades, buyCount, sellCount, winRate%, avgHoldingDays, bestTrade, worstTrade
+
+
+
+GET
+
+/api/leaderboard
+
+Top 50 users ranked by totalPortfolioValue (cash + live market value of all holdings)
+
+
+
+GET
+
+/api/leaderboard/me
+
+Logged-in user's current rank, value, and percentile
+
+
+
+Section 8  ·  Real-Time Socket.io Event System
+
+Socket.io is the heartbeat of the simulator. The server's price ingestion worker polls Yahoo Finance every 15 seconds and instantly broadcasts updates to all connected clients via WebSocket.
+
+8.1  Server → Client Events (Emitted by Server)
+
+EVENT NAME
+
+PAYLOAD STRUCTURE
+
+TRIGGER & PURPOSE
+
+
+
+price_update
+
+{ symbol, price, change, changePercent, volume, timestamp }
+
+Every 15s — broadcast to ALL connected clients. Powers live price badges everywhere.
+
+
+
+portfolio_update
+
+{ totalValue, cashBalance, unrealisedPnL, pnlPercent }
+
+After every successful trade — emitted ONLY to that user's socket room.
+
+
+
+trade_confirmed
+
+{ tradeId, type, symbol, qty, price, pnl, newBalance }
+
+Emitted to user's room after BUY/SELL succeeds. Triggers toast notification.
+
+
+
+trade_error
+
+{ message, code, symbol }
+
+Emitted to user's room if trade fails. e.g. 'Insufficient balance for this order'
+
+
+
+leaderboard_update
+
+[ { rank, userId, name, totalValue, pnlPercent } ] top 10
+
+Every 60s broadcast to ALL clients. Updates leaderboard widget on dashboard.
+
+
+
+market_status
+
+{ isOpen, opensAt, closesAt, message }
+
+Emitted on connect and on market open/close. NSE hours: 9:15AM–3:30PM IST.
+
+
+
+8.2  Client → Server Events (Emitted by Browser)
+
+EVENT NAME
+
+PAYLOAD
+
+PURPOSE
+
+
+
+authenticate
+
+{ token }
+
+Sent immediately on socket connect. Server validates JWT and joins user to personal room.
+
+
+
+subscribe_stock
+
+{ symbol }
+
+Client opens StockDetail page. Server prioritises price updates for this symbol.
+
+
+
+unsubscribe_stock
+
+{ symbol }
+
+Client navigates away. Server stops sending priority ticks for this symbol.
+
+
+
+Section 9  ·  Trading Engine Logic & P&L Formulas
+
+9.1  BUY Order — Step-by-Step Execution
+
+STEP
+
+ACTION
+
+DETAIL
+
+
+
+①
+
+Receive Order
+
+POST /api/trade/buy  {symbol: 'TCS.NS', quantity: 5}  — JWT required
+
+
+
+②
+
+Fetch Live Price
+
+Call Yahoo Finance API → regularMarketPrice for TCS.NS → e.g. ₹3,842.50
+
+
+
+③
+
+Calculate Cost
+
+totalCost = 5 × ₹3,842.50 = ₹19,212.50
+
+
+
+④
+
+Validate Balance
+
+If user.virtualBalance < totalCost → throw 400: 'Insufficient balance'
+
+
+
+⑤
+
+Atomic Deduct
+
+findOneAndUpdate({userId}, {$inc: {virtualBalance: -totalCost}}) — atomic operation
+
+
+
+⑥
+
+Create Transaction
+
+type:'BUY', qty:5, pricePerShare:₹3842.50, totalAmount:₹19212.50, balanceBefore, balanceAfter
+
+
+
+⑦
+
+Upsert Portfolio
+
+If holding exists: newAvgCost=(oldQty×oldAvg + qty×price)/(oldQty+qty) If new: create with avgCost=price, qty=5
+
+
+
+⑧
+
+Emit Socket
+
+socket.to(userId).emit('trade_confirmed', {...}) + socket.to(userId).emit('portfolio_update')
+
+
+
+⑨
+
+Respond
+
+200: {transaction, newBalance: ₹80,787.50, portfolioEntry}
+
+
+
+9.2  SELL Order — Step-by-Step Execution
+
+STEP
+
+ACTION
+
+DETAIL
+
+
+
+①
+
+Receive Order
+
+POST /api/trade/sell  {symbol: 'TCS.NS', quantity: 5}  — JWT required
+
+
+
+②
+
+Check Holdings
+
+Query Portfolio: if qty < 5 → throw 400: 'You only hold N shares of TCS.NS'
+
+
+
+③
+
+Fetch Live Price
+
+Yahoo Finance → regularMarketPrice → e.g. ₹3,917.00
+
+
+
+④
+
+Calculate Proceeds
+
+proceeds = 5 × ₹3,917.00 = ₹19,585.00
+
+
+
+⑤
+
+Calculate P&L
+
+realisedPnL = (₹3,917 − ₹3,842.50) × 5 = +₹372.50
+
+
+
+⑥
+
+Credit Balance
+
+findOneAndUpdate({userId}, {$inc: {virtualBalance: +proceeds}})
+
+
+
+⑦
+
+Create Transaction
+
+type:'SELL', pricePerShare:₹3917, totalAmount:₹19585, realisedPnL:₹372.50
+
+
+
+⑧
+
+Update Portfolio
+
+portfolio.quantity -= 5. If quantity === 0, mark position as closed.
+
+
+
+⑨
+
+Emit & Respond
+
+trade_confirmed with pnl:+₹372.50  |  portfolio_update  |  leaderboard may update
+
+
+
+9.3  All P&L & Portfolio Value Formulas
+
+METRIC
+
+FORMULA
+
+EXAMPLE
+
+
+
+Weighted Average Cost
+
+(oldQty × oldAvg + newQty × newPrice) ÷ (oldQty + newQty)
+
+(5×₹3800 + 3×₹3900) ÷ 8 = ₹3837.50
+
+
+
+Unrealised P&L (per stock)
+
+(currentLivePrice − averageCostPrice) × quantityHeld
+
+(₹3917 − ₹3837.50) × 8 = +₹636
+
+
+
+Unrealised P&L %
+
+(Unrealised P&L ÷ totalInvested) × 100
+
+(636 ÷ 30700) × 100 = +2.07%
+
+
+
+Realised P&L (on SELL)
+
+(sellPrice − averageCostPrice) × quantitySold
+
+(₹3917 − ₹3842.50) × 5 = +₹372.50
+
+
+
+Total Portfolio Value
+
+virtualBalance + Σ(qty × currentLivePrice) for all holdings
+
+₹80,787 + ₹31,336 + ... = ₹1,04,250
+
+
+
+Overall Return %
+
+((totalPortfolioValue − 100000) ÷ 100000) × 100
+
+((104250 − 100000) ÷ 100000) × 100 = +4.25%
+
+
+
+Leaderboard Score
+
+totalPortfolioValue (higher = better rank)
+
+₹1,04,250 → Rank #3
+
+
+
+Win Rate
+
+(profitableSELLtrades ÷ totalSELLtrades) × 100
+
+8 wins out of 12 sells = 66.7% win rate
+
+
+
+Section 10  ·  Frontend Component Architecture
+
+10.1  Page Routes & Components
+
+ROUTE
+
+PAGE
+
+KEY COMPONENTS & FEATURES
+
+
+
+/login
+
+LoginPage
+
+LoginForm, PasswordToggle, Link to register. JWT stored in localStorage.
+
+
+
+/register
+
+RegisterPage
+
+RegisterForm, PasswordStrengthMeter, Email validation. Auto-login on success.
+
+
+
+/dashboard
+
+DashboardPage
+
+BalanceCard, Live Portfolio Summary, MarketTickerBar (scrolling), MiniLeaderboard, NewsWidget, Sector Heatmap
+
+
+
+/market
+
+MarketPage
+
+StockSearchBar, StockTable (sortable), SectorFilter chips, LivePriceCell (socket-powered), Quick Buy button per row
+
+
+
+/market/:symbol
+
+StockDetailPage
+
+PriceChart (Recharts, live), OHLC Summary, OrderPanel (Buy/Sell tabs), StockInfo, Related News
+
+
+
+/portfolio
+
+PortfolioPage
+
+HoldingsTable with live P&L per row, TotalValueCard, UnrealisedPnL card, SectorPieChart
+
+
+
+/analytics
+
+AnalyticsPage
+
+PnL Line Chart (30d), WinRateCard, TradeFrequencyBar, BestWorstTrade, SectorAllocation pie
+
+
+
+/leaderboard
+
+LeaderboardPage
+
+RankTable (top 50), MyRankBadge, ValueTrendSparkline per user, Search user by name
+
+
+
+/history
+
+HistoryPage
+
+TransactionTable (paginated), Filter by date/type/symbol, ExportCSV button, P&L highlighted
+
+
+
+/settings
+
+SettingsPage
+
+Reset Balance, Notification prefs, Display currency format, Theme toggle (dark/light)
+
+
+
+10.2  System Flow (From Document — All 9 Steps)
+
+STEP
+
+SYSTEM ACTION
+
+TECHNICAL DETAIL
+
+
+
+1
+
+User Registers / Logs In
+
+Auth Service creates JWT. virtualBalance set to ₹1,00,000. Socket authenticates with token.
+
+
+
+2
+
+User Receives Virtual Balance
+
+Dashboard shows BalanceCard: ₹1,00,000 available. Total portfolio = ₹1,00,000 (all cash).
+
+
+
+3
+
+System Fetches Live Stock Prices
+
+priceIngestion.worker.js polls Yahoo Finance batch endpoint every 15s. Updates Stock documents.
+
+
+
+4
+
+User Buys / Sells Stocks
+
+REST call to /api/trade/buy or /sell. Price fetched at execution. Portfolio updated atomically.
+
+
+
+5
+
+Backend Processes Transactions
+
+Transaction document created. Balance updated. Portfolio upserted with new avgCost.
+
+
+
+6
+
+Portfolio Updated
+
+Portfolio collection reflects new holdings. P&L calculated in real time using live price.
+
+
+
+7
+
+Profit/Loss Calculated
+
+Unrealised: (livePrice − avgCost) × qty. Realised: stamped on SELL Transaction document.
+
+
+
+8
+
+Leaderboard Updated
+
+leaderboard.service.js runs every 60s. Re-ranks all users by totalPortfolioValue. Emits update.
+
+
+
+9
+
+Dashboard Displays Real-Time Data
+
+Socket pushes price_update and leaderboard_update to all clients. React state updates. UI re-renders.
+
+
+
+Section 11  ·  All 7 Key Features — Implementation Detail
+
+
+
+KEY FEATURE
+
+WHAT IS BUILT
+
+HOW IT IS IMPLEMENTED
+
+
+
+🔐
+
+User Authentication
+
+Register, Login, JWT-protected routes, Admin role
+
+bcrypt hash + JWT (HS256, 7d expiry). Middleware: verifyJWT() on all protected routes. Cookie or localStorage token storage.
+
+
+
+💰
+
+Virtual Trading System
+
+₹1,00,000 starting balance, buy/sell with virtual money
+
+Balance stored in Users.virtualBalance. Atomic MongoDB findOneAndUpdate to prevent race conditions. Reset balance feature included.
+
+
+
+📡
+
+Live Stock Price Updates
+
+Real NSE prices refreshed every 15 seconds
+
+priceIngestion.worker.js uses setInterval(15000). Fetches Yahoo Finance batch endpoint. Updates Stocks collection + emits socket event.
+
+
+
+🛒
+
+Buy / Sell Functionality
+
+Full order execution at live market price
+
+trade.controller.js: validates balance/holdings, fetches live price at execution moment, creates Transaction, upserts Portfolio, emits confirmation.
+
+
+
+💼
+
+Portfolio Tracking
+
+Live holdings table with unrealised P&L per stock
+
+Portfolio collection + live price from Stocks cache. API calculates (livePrice − avgCost) × qty per holding dynamically on every request.
+
+
+
+📊
+
+Profit/Loss Analytics
+
+Realised P&L on sells, daily P&L charts, stats
+
+realisedPnL stored on Transaction. Analytics service aggregates by date for charts. Win rate, avg hold time, best/worst trade stats.
+
+
+
+🏆
+
+Leaderboard System
+
+All users ranked by total portfolio value
+
+leaderboard.service.js: aggregates Portfolio + Stock prices + User balance. Calculates totalValue. Sorts descending. Stores snapshot every 60s.
+
+
+
+Section 12  ·  All 7 Advanced / Optional Features
+
+
+
+FEATURE
+
+PRIORITY
+
+IMPLEMENTATION GUIDE
+
+
+
+📈
+
+Candlestick Charts
+
+HIGH
+
+Use lightweight-charts (TradingView) or Recharts ComposedChart. Data from Yahoo /v8/finance/chart/:symbol?range=1d&interval=5m. Map to {time, open, high, low, close} for candlestick rendering.
+
+
+
+🛑
+
+Stop-Loss & Limit Orders
+
+HIGH
+
+Create PendingOrders collection with {userId, symbol, type:'STOP_LOSS'|'LIMIT', targetPrice, qty}. Price worker checks: if livePrice ≤ stopLoss OR livePrice ≥ limitPrice → auto-execute sell/buy.
+
+
+
+🤖
+
+AI Trading Suggestions
+
+MEDIUM
+
+On stock detail page, collect price history + user's P&L context. Call Claude API with prompt: 'Based on this chart data and user's trade history, what insights can you give?' Display as a conversational insight box.
+
+
+
+📰
+
+News Integration
+
+MEDIUM
+
+Use NewsAPI.org (free tier) to fetch news for each stock symbol. Display 3–5 headlines on StockDetail page. Add sentiment indicator (positive/negative) using keyword matching.
+
+
+
+🌍
+
+Multi-Market Support
+
+MEDIUM
+
+Add BSE support (suffix .BO) alongside NSE (.NS). Same Yahoo Finance API. Add NEPSE Nepal using merolagani.com scraper as optional market. User can choose preferred market in Settings.
+
+
+
+📱
+
+Mobile Responsive UI
+
+HIGH
+
+Tailwind CSS responsive utilities: md:grid-cols-2, lg:flex, sm:text-sm. Test on 375px (iPhone SE) viewport. Hamburger menu for Navbar on mobile. Touch-friendly order modal buttons.
+
+
+
+🏅
+
+Competition / Contest Mode
+
+MEDIUM
+
+Admin creates a Contest with start/end time and separate virtual balance. Leaderboard scoped to contest. Winner announced at end. Schema: Contests collection {title, startAt, endAt, participants[]}.
+
+
+
+Section 13  ·  8-Phase Implementation Plan
+
+Each phase builds on the last. Complete every task in a phase before moving to the next. Estimated total: 8 weeks at 2–3 hours/day.
+
+PHASE 01
+
+Project Setup, Environment & Boilerplate
+
+Week 1  ·  Goal: Running skeleton app with CI/CD — before writing a single feature
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Create GitHub repository. Initialize with README, .gitignore (Node, React). Set up branch strategy: main (prod), develop (staging), feature/* (work).
+
+
+
+②
+
+Backend: mkdir server && npm init -y. Install: express mongoose socket.io jsonwebtoken bcryptjs joi cors helmet express-rate-limit node-fetch dotenv nodemon. Create app.js and server.js.
+
+
+
+③
+
+Frontend: npm create vite@latest client -- --template react. Install: axios socket.io-client recharts @tanstack/react-query react-router-dom tailwindcss. Configure Tailwind.
+
+
+
+④
+
+Create .env file: MONGO_URI=<atlas_string>, JWT_SECRET=<random_64_char>, PORT=5000, FRONTEND_URL=http://localhost:5173. Add .env to .gitignore IMMEDIATELY.
+
+
+
+⑤
+
+Connect MongoDB Atlas: create free cluster, whitelist 0.0.0.0/0 (dev), copy connection string. Write config/db.js with mongoose.connect() and retry logic. Test connection.
+
+
+
+⑥
+
+Deploy skeleton to Render (backend) and Vercel (frontend). Set up environment variables in both dashboards. Confirm both URLs respond with 200. This is your CI/CD pipeline.
+
+
+
+⑦
+
+Write basic Express health-check route: GET /api/health → {status: 'ok', timestamp}. Confirm Postman can reach it. Set up error handler middleware.
+
+
+
+PHASE 02
+
+Authentication & User Management
+
+Week 2  ·  Goal: Full register/login flow with JWT, protected routes, React auth pages
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Build User.model.js with all fields from Section 4.1. Add Mongoose indexes: unique on email, compound index on createdAt for leaderboard queries.
+
+
+
+②
+
+Build auth.controller.js: register() → hash password (bcrypt, saltRounds:12) → save User → sign JWT → return token + user. login() → find by email → compare hash → sign JWT.
+
+
+
+③
+
+Build auth.routes.js: POST /register, POST /login, GET /me (protected), PUT /reset-balance (protected). Mount in app.js as /api/auth.
+
+
+
+④
+
+Build auth.middleware.js: verifyJWT() extracts Bearer token, verifies with jsonwebtoken.verify(), attaches req.user = decoded payload. Returns 401 on failure.
+
+
+
+⑤
+
+Test all auth routes in Postman: register → save token → login → save token → GET /me with token → confirm user object. Test with invalid token → confirm 401.
+
+
+
+⑥
+
+Frontend: build AuthContext.jsx with login(), logout(), user state, token persistence in localStorage. Build ProtectedRoute.jsx wrapper that redirects to /login if no token.
+
+
+
+⑦
+
+Frontend: build LoginPage.jsx and RegisterPage.jsx with forms (no <form> tags — use button onClick). Axios POST to backend. On success, save token via AuthContext. Redirect to /dashboard.
+
+
+
+PHASE 03
+
+Live NSE Market Data Integration
+
+Week 3  ·  Goal: Real NSE prices flowing into your DB and accessible via REST API
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Build yahooFinance.service.js with three functions: fetchSingleQuote(symbol), fetchBatchQuotes(symbols[]), fetchHistory(symbol, range, interval). All use node-fetch to call Yahoo Finance URLs from Section 6.1.
+
+
+
+②
+
+Build Stock.model.js with all fields from Section 4.2. Seed the database with all 20 NIFTY 50 stocks (symbol, shortName, exchange, sector) using a one-time seed script: scripts/seedStocks.js.
+
+
+
+③
+
+Build priceIngestion.worker.js: setInterval(15000, async () => { prices = await fetchBatchQuotes(ALL_SYMBOLS); for each price, update Stock document using findOneAndUpdate. Log success/failure. }).
+
+
+
+④
+
+Start the worker in app.js on server startup. Verify in MongoDB Atlas that currentPrice values are updating every 15 seconds. Test by checking the same document twice 20s apart.
+
+
+
+⑤
+
+Build market.controller.js with getStocks(), getStockDetail(symbol), getStockHistory(symbol, range). Controller reads from MongoDB (already updated by worker) — do NOT call Yahoo Finance on every API request.
+
+
+
+⑥
+
+Build market.routes.js with all routes from Section 7.2. Test GET /api/market/stocks in Postman — should return live prices. Test GET /api/market/stocks/TCS.NS — should return full detail.
+
+
+
+⑦
+
+Frontend: build StockTable.jsx component displaying all 20 stocks with symbol, name, price, change%. Render on /market page. Confirm real prices appear from the backend.
+
+
+
+PHASE 04
+
+Real-Time Socket.io Layer
+
+Week 4  ·  Goal: Prices flash green/red on screen live — zero page refresh needed
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Initialize Socket.io server in app.js: const io = new Server(httpServer, {cors:{origin:FRONTEND_URL}}). Export io instance so controllers can use it.
+
+
+
+②
+
+Build socket/socket.handler.js: on connect, handle 'authenticate' event → verify JWT → socket.join(userId) personal room. Handle subscribe_stock and unsubscribe_stock.
+
+
+
+③
+
+Update priceIngestion.worker.js: after updating each stock in DB, emit io.emit('price_update', {symbol, price, change, changePercent, volume, timestamp}).
+
+
+
+④
+
+Build leaderboard snapshot job: setInterval(60000) → calculate all users' totalPortfolioValue → save LeaderboardSnapshot → io.emit('leaderboard_update', top10).
+
+
+
+⑤
+
+Frontend: build SocketContext.jsx → create socket instance → connect with {auth:{token}} → expose socket via useSocket() hook. Wrap App in SocketProvider.
+
+
+
+⑥
+
+Frontend: build LivePriceBadge.jsx component. Uses useSocket() to listen for price_update events matching the symbol prop. Flashes green if price up, red if down. Shows ₹ price + change%.
+
+
+
+⑦
+
+Frontend: replace static price cells in StockTable with <LivePriceBadge symbol={row.symbol}/>. Watch prices update live. Build MarketTickerBar with all 20 stocks scrolling horizontally.
+
+
+
+PHASE 05
+
+Trading Engine — Buy & Sell Orders
+
+Week 5  ·  Goal: Users can buy and sell stocks; balance updates; confirmation toast appears
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Build Transaction.model.js and Portfolio.model.js with all fields from Sections 4.3 and 4.4. Add compound unique index on Portfolio: {userId:1, symbol:1}.
+
+
+
+②
+
+Build utils/tradeCalculations.js with pure functions: calcBuyCost(qty, price), calcSellProceeds(qty, price), calcNewAvgCost(oldQty, oldAvg, newQty, newPrice), calcRealisedPnL(sellPrice, avgCost, qty).
+
+
+
+③
+
+Build trade.controller.js buyStock(): follows exact 9-step flow from Section 9.1. Use findOneAndUpdate with {returnDocument:'after'} for atomic balance update. Wrap in try/catch.
+
+
+
+④
+
+Build trade.controller.js sellStock(): follows exact 9-step flow from Section 9.2. Calculate realisedPnL using tradeCalculations. Handle full position close (qty becomes 0).
+
+
+
+⑤
+
+Build trade.routes.js: POST /buy (protected), POST /sell (protected), GET /history (protected). Validate bodies with Joi: symbol must be string, quantity must be positive integer.
+
+
+
+⑥
+
+Test complete trade cycle in Postman: register → login → GET balance → POST /buy 5 TCS.NS → confirm balance reduced → POST /sell 5 TCS.NS → confirm balance restored + P&L shown.
+
+
+
+⑦
+
+Frontend: build OrderModal.jsx (Buy/Sell tabs, qty input, estimated total cost, confirm button). On confirm, POST to trade API. On success, show react-toastify toast. Refresh portfolio via React Query invalidation.
+
+
+
+PHASE 06
+
+Portfolio Tracking & P&L Analytics
+
+Week 6  ·  Goal: Portfolio page shows live P&L; Analytics page shows charts and stats
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Build portfolio.controller.js getHoldings(): query all Portfolio docs for userId where qty > 0. For each, get live currentPrice from Stocks collection. Compute unrealisedPnL and pnlPercent. Return enriched array.
+
+
+
+②
+
+Build getSummary(): aggregate Portfolio + Stocks to calculate totalPortfolioValue (sum of qty × currentPrice) + virtualBalance. Include totalInvested, unrealisedPnL, unrealisedPnlPercent, overallReturn%.
+
+
+
+③
+
+Build getAllocation(): group portfolio holdings by sector. Calculate each sector's % of total holdings value. Return [{sector, value, percent}] for pie chart.
+
+
+
+④
+
+Build analytics.controller.js getPnLChart(): aggregate Transactions by executedAt date. For each day, sum realisedPnL from SELL transactions. Return [{date, dailyPnL, cumulativePnL}].
+
+
+
+⑤
+
+Build getTradeStats(): query Transactions → count total, buy, sell. Filter SELL for profit/loss → calculate winRate. Calculate avg days between buy and corresponding sell. Find best and worst trade.
+
+
+
+⑥
+
+Frontend: build PortfolioPage.jsx with PortfolioTable (live P&L column flashing), SectorPieChart (Recharts PieChart), TotalValueCard, and unrealised P&L summary cards.
+
+
+
+⑦
+
+Frontend: build AnalyticsPage.jsx with PnL Line Chart (Recharts LineChart, cumulative P&L vs time), WinRateCard, TradeFrequencyBarChart, and BestWorstTrade cards.
+
+
+
+PHASE 07
+
+Leaderboard, Dashboard & Advanced Features
+
+Week 7  ·  Goal: Live leaderboard, full dashboard, optional features (candlesticks, stop-loss)
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Build leaderboard.service.js: for each user, query their Portfolio (qty × currentPrice) + virtualBalance = totalValue. Sort descending. Assign rank. Save as LeaderboardSnapshot. Return top 50.
+
+
+
+②
+
+Build leaderboard.controller.js getLeaderboard() and getMyRank(). Mount in leaderboard.routes.js. Connect to 60-second socket broadcast.
+
+
+
+③
+
+Frontend: build LeaderboardPage.jsx with ranked table (rank, avatar, name, totalValue, pnlPercent, sparkline). Highlight current user's row. Show MyRankBadge.
+
+
+
+④
+
+Build full Dashboard.jsx: BalanceCard (live via socket portfolio_update), MarketTickerBar (live prices scrolling), QuickStats (total invested, unrealised P&L), MiniLeaderboard (top 5), SectorHeatmap.
+
+
+
+⑤
+
+Advanced Feature: implement Stop-Loss orders. Add PendingOrders collection. Price worker checks if livePrice ≤ stopPrice → auto-execute sell → emit trade_confirmed. Add form to OrderModal for stop-loss price.
+
+
+
+⑥
+
+Advanced Feature: add Recharts CandlestickChart to StockDetail page using Yahoo Finance 5-minute history data. Show timeframe buttons: 1D, 5D, 1M, 3M.
+
+
+
+⑦
+
+Build HistoryPage.jsx with TransactionTable (all trades, paginated, filterable). Show trade type badge (green BUY / red SELL). Show realisedPnL column for sells. Add CSV export button.
+
+
+
+PHASE 08
+
+Security, Testing, Polish & Production Deploy
+
+Week 8  ·  Goal: Production-ready, fully deployed, secure, tested, demo-ready
+
+
+
+TASK
+
+DETAIL
+
+
+
+①
+
+Security hardening: add helmet() to Express. Configure cors() with whitelist of FRONTEND_URL only. Add express-rate-limit: 100 req/15min global, 10 /api/trade requests/min per IP.
+
+
+
+②
+
+Input validation: add Joi middleware to all POST/PUT routes. Validate: email format, password minimum 8 chars, symbol is valid string, quantity is positive integer between 1 and 10000.
+
+
+
+③
+
+Error handling: ensure all async controllers are wrapped in try/catch. Build centralised errorHandler middleware returning {success:false, message, code}. Log all 5xx errors.
+
+
+
+④
+
+Socket security: add socket.io middleware that verifies JWT on connection handshake. Reject connections without valid token. Rate-limit socket emissions per room.
+
+
+
+⑤
+
+Frontend polish: add loading skeletons (not spinners) for all data-fetching states. Add error states with retry buttons. Make fully mobile-responsive (test at 375px, 768px, 1280px).
+
+
+
+⑥
+
+Performance: implement React Query staleTime (30s for market data). Add in-memory price cache on backend (avoid redundant Yahoo Finance calls). Compress responses with Express compression middleware.
+
+
+
+⑦
+
+Full deploy: push to GitHub → auto-deploy triggers on Render (backend) and Vercel (frontend). Set all env vars. Test end-to-end: register → buy stock → check portfolio → check leaderboard → sell → check analytics.
+
+
+
+Section 14  ·  Security Model
+
+AREA
+
+TECHNOLOGY
+
+IMPLEMENTATION
+
+
+
+Authentication
+
+JWT (HS256)
+
+7-day expiry. Stored in httpOnly cookie (prod) or localStorage (dev). verifyJWT middleware on all protected routes.
+
+
+
+Password Storage
+
+bcrypt.js
+
+saltRounds: 12. Password never returned in any API response. Compare hash with bcrypt.compare() on login.
+
+
+
+Rate Limiting
+
+express-rate-limit
+
+100 requests per 15 minutes per IP globally. 10 trade requests per minute per user. Returns 429 on breach.
+
+
+
+HTTP Headers
+
+helmet.js
+
+Sets Content-Security-Policy, X-Frame-Options, X-XSS-Protection, Strict-Transport-Security, and more.
+
+
+
+CORS Policy
+
+cors middleware
+
+Only FRONTEND_URL is whitelisted. All other origins blocked. Credentials allowed for cookie-based auth.
+
+
+
+Input Validation
+
+Joi schemas
+
+All POST/PUT request bodies validated before reaching controllers. Rejects unknown fields. Returns 400 with detail.
+
+
+
+Atomic Operations
+
+MongoDB findOneAndUpdate
+
+Balance deduction and portfolio update done atomically to prevent double-spend race conditions.
+
+
+
+Socket Auth
+
+Socket.io middleware
+
+JWT verified on socket handshake. Socket joins personal userId room. Unauthenticated sockets cannot trade.
+
+
+
+Secrets Management
+
+.env + Render/Vercel
+
+MONGO_URI, JWT_SECRET never in codebase. Validated at startup in config/env.js. Different values per environment.
+
+
+
+Section 15  ·  Deployment Plan & Prerequisites
+
+15.1  Deployment Architecture (All Free Tier)
+
+COMPONENT
+
+PLATFORM
+
+FREE TIER LIMITS
+
+CONFIGURATION
+
+
+
+Frontend (React)
+
+Vercel
+
+Unlimited deploys, 100GB bandwidth
+
+Connect GitHub repo, auto-deploy on push to main, set VITE_API_URL env var
+
+
+
+Backend (Node)
+
+Render
+
+750 hours/month, 512MB RAM
+
+Web Service, free tier, set all .env vars, enable WebSocket support
+
+
+
+Database
+
+MongoDB Atlas
+
+512MB storage, shared cluster
+
+Create free cluster, whitelist Render outbound IPs, copy connection string
+
+
+
+Socket.io
+
+Same Render instance
+
+Included in backend service
+
+Runs on same HTTP server as Express, no separate service needed
+
+
+
+15.2  Prerequisites (From Document)
+
+SKILL REQUIRED
+
+LEVEL NEEDED
+
+WHY IT IS NEEDED
+
+
+
+JavaScript (ES6+)
+
+Intermediate
+
+Async/await, destructuring, array methods, closures — used everywhere in both frontend and backend
+
+
+
+HTML5 & CSS3
+
+Basic
+
+Structure of React components, Tailwind class understanding, responsive layout concepts
+
+
+
+React.js
+
+Basic
+
+Hooks (useState, useEffect, useContext), component architecture, props, React Router
+
+
+
+Node.js & Express
+
+Basic
+
+Creating HTTP servers, middleware chains, REST routes, request/response cycle
+
+
+
+MongoDB & Mongoose
+
+Fundamental
+
+Schema design, CRUD operations, findOneAndUpdate, aggregation pipeline
+
+
+
+REST APIs
+
+Understanding
+
+HTTP methods, status codes, JSON request/response format, headers, CORS
+
+
+
+WebSockets / Socket.io
+
+Basic
+
+Event-based communication, rooms, connect/disconnect lifecycle — new concept to learn here
+
+
+
+Section 16  ·  Learning Outcomes (From Document)
+
+By completing all 8 phases of this project, students will have demonstrated mastery in these skill areas:
+
+
+
+LEARNING OUTCOME
+
+WHAT WAS DEMONSTRATED
+
+
+
+🏗️
+
+Build a Full-Stack MERN App
+
+Designed, built, and deployed a complete production application: React frontend, Node/Express backend, MongoDB database, all working together.
+
+
+
+🔄
+
+Implement Real-Time Data Handling
+
+Built a Socket.io system that delivers live stock price ticks to thousands of clients simultaneously with zero page refresh using WebSocket technology.
+
+
+
+💹
+
+Work with Financial Calculations
+
+Implemented weighted average cost, realised/unrealised P&L, portfolio valuation, win-rate — all based on live market prices from a real exchange.
+
+
+
+🧱
+
+Design Scalable Systems
+
+Separated concerns into 6 distinct backend services. Designed MongoDB schemas with proper indexes. Used atomic operations to prevent data inconsistency.
+
+
+
+🔌
+
+Integrate External APIs
+
+Consumed Yahoo Finance REST API for live NSE prices. Handled JSON parsing, error states, rate limiting, and caching of external data.
+
+
+
+📈
+
+Develop Interactive Dashboards
+
+Built a live trading dashboard with price charts (Recharts), real-time P&L updates, sector allocation pies, and an animated leaderboard.
+
+
+
+🧠
+
+Improve Problem-Solving Skills
+
+Debugged race conditions (atomic operations), WebSocket connection drops (reconnect logic), and complex aggregation queries (leaderboard ranking).
+
+
+
+◈  END OF BLUEPRINT  ◈
+
+Real-Time Stock Market Simulator  ·  Full Implementation Guide  ·  NSE India Live Data  ·  8 Phases  ·  MERN + Socket.io
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
