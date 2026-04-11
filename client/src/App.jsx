@@ -20,31 +20,13 @@ import History from './pages/history/History.jsx';
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-  
+  const { isAuthenticated } = useAuth();
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 // Public route - redirects to dashboard if authenticated
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-  
+  const { isAuthenticated } = useAuth();
   return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 

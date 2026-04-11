@@ -49,24 +49,32 @@ const fetchAndUpdatePrices = async () => {
     const quotes = await fetchBatchQuotes(symbols);
     
     if (!quotes || quotes.length === 0) {
-      console.warn('⚠️ No quotes received from Yahoo Finance');
+      console.warn('⚠️ No quotes received - check stock symbols');
       return;
+    }
+    
+    // Log if using simulated data
+    const mockCount = quotes.filter(q => q.isMock).length;
+    if (mockCount > 0) {
+      console.log(`📊 Using simulated data for ${mockCount}/${quotes.length} stocks`);
     }
 
     // Update database and emit socket events
     const updates = [];
     
     for (const quote of quotes) {
-      // Update stock in database
+      // Update or create stock in database with all market data
       const updatedStock = await Stock.findOneAndUpdate(
         { symbol: quote.symbol },
         {
+          symbol: quote.symbol,
+          shortName: quote.shortName,
           currentPrice: quote.currentPrice,
           previousClose: quote.previousClose,
           dayHigh: quote.dayHigh,
           dayLow: quote.dayLow,
           volume: quote.volume,
-          changeAmount: quote.changeAmount,
+          change: quote.changeAmount,
           changePercent: quote.changePercent,
           marketCap: quote.marketCap,
           fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
@@ -74,9 +82,10 @@ const fetchAndUpdatePrices = async () => {
           peRatio: quote.peRatio,
           pbRatio: quote.pbRatio,
           dividendYield: quote.dividendYield,
+          currency: quote.currency,
           lastUpdated: new Date(),
         },
-        { new: true, upsert: false }
+        { upsert: true, new: true }
       );
 
       if (updatedStock) {

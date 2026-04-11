@@ -19,9 +19,11 @@ export const AuthProvider = ({ children }) => {
       if (token && storedUser) {
         try {
           // Verify token by fetching current user
-          const response = await authAPI.getMe();
-          if (response.success) {
-            setUser(response.data);
+          const data = await authAPI.getMe();
+          // Axios returns response.data directly - could be user object or {success, data} wrapper
+          const user = data.id ? data : (data.success ? data.data : null);
+          if (user) {
+            setUser(user);
           } else {
             // Token invalid, clear storage
             localStorage.removeItem('token');
@@ -40,18 +42,31 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await authAPI.login(email, password);
+      console.log('Attempting login...', email);
+      const data = await authAPI.login(email, password);
+      console.log('Login response:', data);
       
-      if (response.success) {
-        const { user, token } = response.data;
+      // Axios interceptor returns response.data directly
+      if (data.token && data.user) {
+        const { user, token } = data;
+        console.log('Login successful, storing token and user');
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
         toast.success('Login successful!');
         navigate('/dashboard');
         return true;
+      } else if (data.success === false) {
+        console.log('Login failed:', data.message);
+        toast.error(data.message || 'Login failed');
+        return false;
+      } else {
+        console.log('Unexpected response format');
+        toast.error('Login failed - unexpected response');
+        return false;
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast.error(error.response?.data?.message || 'Login failed');
       return false;
     }
@@ -59,16 +74,19 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const response = await authAPI.register(name, email, password);
+      const data = await authAPI.register(name, email, password);
       
-      if (response.success) {
-        const { user, token } = response.data;
+      if (data.token && data.user) {
+        const { user, token } = data;
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
         toast.success('Registration successful!');
         navigate('/dashboard');
         return true;
+      } else if (data.success === false) {
+        toast.error(data.message || 'Registration failed');
+        return false;
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Registration failed');

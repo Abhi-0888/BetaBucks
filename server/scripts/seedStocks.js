@@ -2,28 +2,28 @@ import mongoose from 'mongoose';
 import Stock from '../models/Stock.model.js';
 import env from '../config/env.js';
 
-// Default NIFTY 50 stocks with company info
+// Default NIFTY 50 stocks with realistic initial prices (April 2024)
 const defaultStocks = [
-  { symbol: 'RELIANCE.NS', shortName: 'Reliance Industries Ltd', sector: 'Energy', exchange: 'NSE' },
-  { symbol: 'TCS.NS', shortName: 'Tata Consultancy Services', sector: 'IT', exchange: 'NSE' },
-  { symbol: 'INFY.NS', shortName: 'Infosys Ltd', sector: 'IT', exchange: 'NSE' },
-  { symbol: 'HDFCBANK.NS', shortName: 'HDFC Bank Ltd', sector: 'Banking', exchange: 'NSE' },
-  { symbol: 'ICICIBANK.NS', shortName: 'ICICI Bank Ltd', sector: 'Banking', exchange: 'NSE' },
-  { symbol: 'WIPRO.NS', shortName: 'Wipro Ltd', sector: 'IT', exchange: 'NSE' },
-  { symbol: 'SBIN.NS', shortName: 'State Bank of India', sector: 'Banking', exchange: 'NSE' },
-  { symbol: 'TATAMOTORS.NS', shortName: 'Tata Motors Ltd', sector: 'Auto', exchange: 'NSE' },
-  { symbol: 'TATASTEEL.NS', shortName: 'Tata Steel Ltd', sector: 'Metals', exchange: 'NSE' },
-  { symbol: 'HINDUNILVR.NS', shortName: 'Hindustan Unilever', sector: 'FMCG', exchange: 'NSE' },
-  { symbol: 'BAJFINANCE.NS', shortName: 'Bajaj Finance Ltd', sector: 'Finance', exchange: 'NSE' },
-  { symbol: 'ADANIENT.NS', shortName: 'Adani Enterprises', sector: 'Conglomerate', exchange: 'NSE' },
-  { symbol: 'MARUTI.NS', shortName: 'Maruti Suzuki India', sector: 'Auto', exchange: 'NSE' },
-  { symbol: 'SUNPHARMA.NS', shortName: 'Sun Pharmaceutical', sector: 'Pharma', exchange: 'NSE' },
-  { symbol: 'ONGC.NS', shortName: 'ONGC Ltd', sector: 'Energy', exchange: 'NSE' },
-  { symbol: 'POWERGRID.NS', shortName: 'Power Grid Corporation', sector: 'Utilities', exchange: 'NSE' },
-  { symbol: 'COALINDIA.NS', shortName: 'Coal India Ltd', sector: 'Mining', exchange: 'NSE' },
-  { symbol: 'NTPC.NS', shortName: 'NTPC Ltd', sector: 'Utilities', exchange: 'NSE' },
-  { symbol: 'LT.NS', shortName: 'Larsen & Toubro Ltd', sector: 'Infrastructure', exchange: 'NSE' },
-  { symbol: 'AXISBANK.NS', shortName: 'Axis Bank Ltd', sector: 'Banking', exchange: 'NSE' },
+  { symbol: 'RELIANCE.NS', shortName: 'Reliance Industries Ltd', sector: 'Energy', exchange: 'NSE', currentPrice: 2950, marketCap: 1995000 },
+  { symbol: 'TCS.NS', shortName: 'Tata Consultancy Services', sector: 'IT', exchange: 'NSE', currentPrice: 4250, marketCap: 1558000 },
+  { symbol: 'INFY.NS', shortName: 'Infosys Ltd', sector: 'IT', exchange: 'NSE', currentPrice: 1480, marketCap: 612000 },
+  { symbol: 'HDFCBANK.NS', shortName: 'HDFC Bank Ltd', sector: 'Banking', exchange: 'NSE', currentPrice: 1520, marketCap: 1150000 },
+  { symbol: 'ICICIBANK.NS', shortName: 'ICICI Bank Ltd', sector: 'Banking', exchange: 'NSE', currentPrice: 1080, marketCap: 760000 },
+  { symbol: 'WIPRO.NS', shortName: 'Wipro Ltd', sector: 'IT', exchange: 'NSE', currentPrice: 465, marketCap: 243000 },
+  { symbol: 'SBIN.NS', shortName: 'State Bank of India', sector: 'Banking', exchange: 'NSE', currentPrice: 890, marketCap: 794000 },
+  { symbol: 'TATAPOWER.NS', shortName: 'Tata Power Company Ltd', sector: 'Utilities', exchange: 'NSE', currentPrice: 410, marketCap: 131000 },
+  { symbol: 'TATASTEEL.NS', shortName: 'Tata Steel Ltd', sector: 'Metals', exchange: 'NSE', currentPrice: 168, marketCap: 209000 },
+  { symbol: 'HINDUNILVR.NS', shortName: 'Hindustan Unilever Ltd', sector: 'FMCG', exchange: 'NSE', currentPrice: 2320, marketCap: 543000 },
+  { symbol: 'BAJFINANCE.NS', shortName: 'Bajaj Finance Ltd', sector: 'Finance', exchange: 'NSE', currentPrice: 7020, marketCap: 439000 },
+  { symbol: 'ADANIENT.NS', shortName: 'Adani Enterprises Ltd', sector: 'Conglomerate', exchange: 'NSE', currentPrice: 3340, marketCap: 380000 },
+  { symbol: 'MARUTI.NS', shortName: 'Maruti Suzuki India Ltd', sector: 'Auto', exchange: 'NSE', currentPrice: 12750, marketCap: 382000 },
+  { symbol: 'SUNPHARMA.NS', shortName: 'Sun Pharmaceutical Ltd', sector: 'Pharma', exchange: 'NSE', currentPrice: 1780, marketCap: 426000 },
+  { symbol: 'ONGC.NS', shortName: 'ONGC Ltd', sector: 'Energy', exchange: 'NSE', currentPrice: 278, marketCap: 350000 },
+  { symbol: 'POWERGRID.NS', shortName: 'Power Grid Corporation Ltd', sector: 'Utilities', exchange: 'NSE', currentPrice: 335, marketCap: 312000 },
+  { symbol: 'COALINDIA.NS', shortName: 'Coal India Ltd', sector: 'Mining', exchange: 'NSE', currentPrice: 460, marketCap: 283000 },
+  { symbol: 'NTPC.NS', shortName: 'NTPC Ltd', sector: 'Utilities', exchange: 'NSE', currentPrice: 390, marketCap: 375000 },
+  { symbol: 'LT.NS', shortName: 'Larsen & Toubro Ltd', sector: 'Infrastructure', exchange: 'NSE', currentPrice: 3680, marketCap: 507000 },
+  { symbol: 'AXISBANK.NS', shortName: 'Axis Bank Ltd', sector: 'Banking', exchange: 'NSE', currentPrice: 1120, marketCap: 345000 },
 ];
 
 const seedStocks = async () => {
@@ -36,18 +36,22 @@ const seedStocks = async () => {
     await Stock.deleteMany({});
     console.log('🗑️ Cleared existing stocks');
 
-    // Insert default stocks
+    // Insert default stocks with initial prices
     for (const stockData of defaultStocks) {
       await Stock.findOneAndUpdate(
         { symbol: stockData.symbol },
         {
-          ...stockData,
-          currentPrice: 0,
+          symbol: stockData.symbol,
+          shortName: stockData.shortName,
+          sector: stockData.sector,
+          exchange: stockData.exchange,
+          currentPrice: stockData.currentPrice,
+          marketCap: stockData.marketCap ? stockData.marketCap * 100000 : null,
           lastUpdated: new Date(),
         },
         { upsert: true, new: true }
       );
-      console.log(`✅ Seeded: ${stockData.symbol} - ${stockData.shortName}`);
+      console.log(`✅ Seeded: ${stockData.symbol} - ₹${stockData.currentPrice}`);
     }
 
     console.log('\n🎉 Stock database seeded successfully!');
