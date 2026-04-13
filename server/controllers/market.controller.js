@@ -34,7 +34,7 @@ export const getStocks = asyncHandler(async (req, res) => {
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
-  const [stocks, total] = await Promise.all([
+  let [stocks, total] = await Promise.all([
     Stock.find(query)
       .sort(sortOptions)
       .skip(skip)
@@ -42,6 +42,50 @@ export const getStocks = asyncHandler(async (req, res) => {
       .lean(),
     Stock.countDocuments(query),
   ]);
+
+  // If no stocks in database, populate with simulated data
+  if (total === 0 && !search && !sector) {
+    const { fetchBatchQuotes } = await import('../services/yahooFinance.service.js');
+    const defaultStocks = env.DEFAULT_STOCKS || ['RELIANCE.NS', 'TCS.NS', 'INFY.NS'];
+    const quotes = await fetchBatchQuotes(defaultStocks);
+    
+    // Create stocks in database
+    for (const quote of quotes) {
+      await Stock.findOneAndUpdate(
+        { symbol: quote.symbol },
+        {
+          symbol: quote.symbol,
+          shortName: quote.shortName,
+          currentPrice: quote.currentPrice,
+          previousClose: quote.previousClose,
+          dayHigh: quote.dayHigh,
+          dayLow: quote.dayLow,
+          volume: quote.volume,
+          change: quote.changeAmount,
+          changePercent: quote.changePercent,
+          marketCap: quote.marketCap,
+          fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
+          fiftyTwoWeekLow: quote.fiftyTwoWeekLow,
+          peRatio: quote.peRatio,
+          pbRatio: quote.pbRatio,
+          dividendYield: quote.dividendYield,
+          currency: quote.currency,
+          lastUpdated: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+    }
+    
+    // Re-fetch after creating
+    [stocks, total] = await Promise.all([
+      Stock.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Stock.countDocuments(query),
+    ]);
+  }
 
   // Enrich with formatted data
   const enrichedStocks = stocks.map(stock => ({
