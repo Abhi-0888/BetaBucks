@@ -1,156 +1,162 @@
-# NidhiKosh - Real-Time Stock Market Simulator
+# NidhiKosh — High-Fidelity NSE Stock Market Simulator
 
-A full-stack MERN web application that replicates the experience of live stock trading using real market prices from the National Stock Exchange of India (NSE) — with zero financial risk.
+> _"Nidhi" (treasure) + "Kosh" (vault)_ — A data-dense, never-sleeping market terminal.
+
+A full-stack MERN application that simulates live NSE trading with institutional-grade data: VWAP, market depth, circuit limits, sector heatmaps, intraday candles, and a **Living Dashboard** that serves frozen post-market snapshots when markets close — so the screen is never empty.
 
 ## 🚀 Features
 
+### Core Trading
 - **Virtual Trading**: Start with ₹1,00,000 virtual balance
-- **Live NSE Prices**: Real-time stock prices via Yahoo Finance API
+- **Live NSE Prices**: Real-time stock prices via Yahoo Finance API + simulated fallback
 - **Real-Time Updates**: WebSocket-powered live price ticks every 15 seconds
 - **Portfolio Tracking**: Live P&L calculations with unrealized gains/losses
 - **Leaderboard**: Compete with other traders ranked by portfolio value
-- **Trade Analytics**: P&L charts, win rate, best/worst trades
-- **Beautiful UI**: Modern dark-themed interface with Tailwind CSS
-- **Mobile Responsive**: Fully responsive design for all devices
+
+### NidhiKosh — Advanced Data Layer
+- **VWAP (Volume Weighted Average Price)**: Calculated per-session from tick data
+- **Market Depth**: Top 5 Bid/Ask with order counts and quantity bars
+- **Circuit Limits**: ±20% upper/lower circuit prices for each stock
+- **Turnover & Volume**: Cumulative session turnover in INR, avg daily volume comparison
+- **Intraday Candles**: 1-minute and 5-minute OHLCV candles frozen after close
+- **Official Close**: Weighted average of last 30 minutes (NSE-style)
+- **EMA 50/200**: Exponential moving average overlays
+
+### Living Dashboard
+- **Market Status Banner**: PRE_OPEN / LIVE / POST_CLOSE / CLOSED with IST clock
+- **Frozen Snapshot Mode**: When market is closed, serves last session's complete data
+- **Index Cards**: Simulated NIFTY 50 / BANK NIFTY with advance/decline bars
+- **Sector Heatmap**: Color-coded sector performance grid
+- **Vyuha Movers**: Top Gainers, Losers, Volume Shockers (>200% avg vol), Value Leaders
+- **Market Breadth Gauge**: Advance/Decline ratio with sentiment indicator
+- **Scrolling Price Ticker**: Saffron-glowing real-time ticker ribbon
+
+### TradingView Charts
+- **Lightweight Charts**: Candlestick + Volume histogram + VWAP overlay
+- **Multi-Timeframe**: 1D, 5D, 1M, 3M, 6M, 1Y range selectors
+- **Price Range Bar**: Visual current-price position between day low/high
+- **Responsive**: Auto-resize on window changes
+
+### Sanskrit-Cyber Aesthetic
+- **Saffron Gold + Deep Void**: Dark theme with `#ff9933` saffron accents
+- **Grid Pattern Background**: Subtle saffron grid lines
+- **Glow Borders**: Cards with animated saffron glow effects
+- **JetBrains Mono**: Monospace font for all numerical data
+- **Phase Badges**: Color-coded market phase indicators
 
 ## 🏗️ Tech Stack
 
 ### Backend
-- Node.js + Express.js
-- MongoDB + Mongoose
-- Socket.io for real-time communication
-- JWT authentication
-- Yahoo Finance API for live NSE data
+- **Node.js + Express.js** — REST API + WebSocket server
+- **MongoDB + Mongoose** — Expanded Stock model + MarketSnapshot model
+- **Socket.io** — Real-time price updates + market status broadcast
+- **JWT authentication** — Secure user sessions
+- **Yahoo Finance API** — Live NSE data with simulated fallback
+- **Market Status Service** — IST timezone, NSE holidays, trading phases
+- **Snapshot Service** — Auto-capture at 15:45 IST, upsert to MongoDB
 
 ### Frontend
-- React 18 + Vite
-- Tailwind CSS
-- React Query for state management
-- Recharts for data visualization
-- Socket.io client
+- **React 18 + Vite** — Fast HMR development
+- **TailwindCSS** — Custom NidhiKosh theme with saffron palette
+- **React Query** — Data fetching with auto-refetch
+- **TradingView Lightweight Charts** — Candlestick + VWAP + Volume
+- **Lucide React** — Icon library
+- **Socket.io Client** — Live price + market status updates
 
 ## 📁 Project Structure
 
 ```
 NidhiKosh/
-├── server/                 # Backend
-│   ├── config/            # DB config, env validation
-│   ├── controllers/       # Business logic
-│   ├── middleware/        # Auth, validation, rate limiting
-│   ├── models/           # Mongoose schemas
-│   ├── routes/           # API routes
-│   ├── services/         # Yahoo Finance, Leaderboard services
-│   ├── socket/           # Socket.io handlers
-│   ├── utils/            # Trade calculations
-│   ├── workers/          # Price ingestion worker
-│   ├── scripts/          # DB seeding
-│   ├── app.js           # Express app setup
-│   └── server.js         # Server entry point
+├── server/
+│   ├── config/              # DB config, env validation
+│   ├── controllers/         # market (+ heatmap, movers, breadth, snapshot)
+│   ├── middleware/          # Auth, validation, rate limiting
+│   ├── models/
+│   │   ├── Stock.model.js   # Extended: VWAP, depth, candles, circuits, turnover
+│   │   └── MarketSnapshot.model.js  # NEW: Full session state at close
+│   ├── routes/              # market routes (+ /status, /snapshot, /heatmap, /movers, /breadth)
+│   ├── services/
+│   │   ├── yahooFinance.service.js   # Enhanced: VWAP engine, depth sim, candle builder
+│   │   ├── marketStatus.service.js   # NEW: IST phases, holidays, frozen mode
+│   │   └── snapshot.service.js       # NEW: Capture + serve market snapshots
+│   ├── socket/              # Socket.io handlers
+│   ├── workers/             # Price ingestion + snapshot trigger at 15:45 IST
+│   └── server.js
 │
-└── client/                # Frontend
+└── client/
     ├── src/
-    │   ├── api/          # API functions
-    │   ├── components/   # UI components
-    │   ├── context/      # Auth & Socket contexts
-    │   ├── hooks/        # Custom React hooks
-    │   ├── pages/        # Page components
-    │   └── utils/        # Formatters
+    │   ├── api/market.api.js      # Extended: status, snapshot, heatmap, movers, breadth
+    │   ├── pages/
+    │   │   ├── dashboard/Dashboard.jsx  # NidhiKosh Living Dashboard
+    │   │   └── market/StockDetail.jsx   # TradingView chart + depth + circuits
+    │   ├── context/SocketContext.jsx     # marketStatus via WebSocket
+    │   └── index.css                    # Sanskrit-Cyber theme styles
+    ├── tailwind.config.js              # Saffron palette, vyuha colors, glow animations
     └── index.html
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- MongoDB Atlas account (free tier works)
+- Node.js (v18+)
+- MongoDB (local or Atlas)
 
-### 1. Clone and Setup
-
-```bash
-# Navigate to project
-cd NidhiKosh
-```
-
-### 2. Backend Setup
-
+### Backend
 ```bash
 cd server
-
-# Install dependencies
 npm install
-
-# Create .env file
-cp .env.example .env
-
-# Edit .env with your values:
-# MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/nidhikosh
-# JWT_SECRET=your_super_secret_key
-# FRONTEND_URL=http://localhost:5173
-
-# Seed the database with default stocks
-npm run seed
-
-# Start the server
+# Create .env with MONGO_URI, JWT_SECRET, FRONTEND_URL
 npm run dev
 ```
+Server starts on `http://localhost:5000`
 
-The backend will start on `http://localhost:5000`
-
-### 3. Frontend Setup
-
+### Frontend
 ```bash
 cd client
-
-# Install dependencies
 npm install
-
-# Start the dev server
 npm run dev
 ```
-
-The frontend will start on `http://localhost:5173`
-
-## 📊 Default Stocks (NIFTY 50)
-
-The app includes 20 top NIFTY 50 stocks:
-- RELIANCE.NS, TCS.NS, INFY.NS, HDFCBANK.NS, ICICIBANK.NS
-- WIPRO.NS, SBIN.NS, TATAMOTORS.NS, TATASTEEL.NS, HINDUNILVR.NS
-- BAJFINANCE.NS, ADANIENT.NS, MARUTI.NS, SUNPHARMA.NS, ONGC.NS
-- POWERGRID.NS, COALINDIA.NS, NTPC.NS, LT.NS, AXISBANK.NS
+Client starts on `http://localhost:5173`
 
 ## 🔌 API Endpoints
 
 ### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
-- `PUT /api/auth/reset-balance` - Reset balance to ₹1,00,000
+- `POST /api/auth/register` — Register
+- `POST /api/auth/login` — Login
+- `GET /api/auth/me` — Current user
+- `PUT /api/auth/reset-balance` — Reset to ₹1L
 
-### Market
-- `GET /api/market/stocks` - Get all stocks
-- `GET /api/market/stocks/:symbol` - Get stock detail
-- `GET /api/market/stocks/:symbol/history` - Get price history
-- `GET /api/market/search?q=query` - Search stocks
-- `GET /api/market/nifty50` - Get NIFTY 50 stocks
-- `GET /api/market/sectors` - Get sector data
+### Market (Core)
+- `GET /api/market/stocks` — All stocks (paginated)
+- `GET /api/market/stocks/:symbol` — Full detail (VWAP, depth, candles, circuits)
+- `GET /api/market/stocks/:symbol/history` — OHLCV history for charts
+- `GET /api/market/search?q=query` — Search stocks
+- `GET /api/market/nifty50` — NIFTY 50 stocks
+- `GET /api/market/sectors` — Sector summary
+
+### Market (NidhiKosh)
+- `GET /api/market/status` — Market phase, IST time, frozen mode flag
+- `GET /api/market/snapshot` — Latest MarketSnapshot (indices, breadth, heatmap, movers)
+- `GET /api/market/heatmap` — Live sector heatmap with per-stock breakdown
+- `GET /api/market/movers` — Top gainers/losers/volume shockers/value leaders
+- `GET /api/market/breadth` — Advance/decline ratio + sentiment
+- `POST /api/market/snapshot/capture` — Force snapshot capture (admin)
 
 ### Trading
-- `POST /api/trade/buy` - Buy stock
-- `POST /api/trade/sell` - Sell stock
-- `GET /api/trade/history` - Get trade history
+- `POST /api/trade/buy` — Buy stock
+- `POST /api/trade/sell` — Sell stock
+- `GET /api/trade/history` — Trade history
 
 ### Portfolio
-- `GET /api/portfolio` - Get holdings
-- `GET /api/portfolio/summary` - Get portfolio summary
-- `GET /api/portfolio/allocation` - Get sector allocation
+- `GET /api/portfolio` — Holdings
+- `GET /api/portfolio/summary` — Portfolio summary
+- `GET /api/portfolio/allocation` — Sector allocation
 
-### Leaderboard
-- `GET /api/leaderboard` - Get top users
-- `GET /api/leaderboard/me` - Get my rank
-
-### Analytics
-- `GET /api/analytics/pnl` - Get P&L chart data
-- `GET /api/analytics/trades` - Get trade statistics
+### Leaderboard & Analytics
+- `GET /api/leaderboard` — Top users
+- `GET /api/leaderboard/me` — My rank
+- `GET /api/analytics/pnl` — P&L chart data
+- `GET /api/analytics/trades` — Trade statistics
 
 ## 🔐 Environment Variables
 
@@ -162,7 +168,6 @@ JWT_SECRET=your_jwt_secret
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
-YAHOO_FINANCE_BASE_URL=https://query1.finance.yahoo.com
 ```
 
 ### Frontend (.env)
@@ -171,109 +176,36 @@ VITE_API_URL=http://localhost:5000
 VITE_SOCKET_URL=http://localhost:5000
 ```
 
-## 🎯 Key Features Implemented
+## 📊 Stock Universe (20 NIFTY 50 Stocks)
 
-### Phase 1: Project Setup ✅
-- Express server with middleware
-- MongoDB connection
-- React + Vite frontend
-- Tailwind CSS configuration
+RELIANCE, TCS, INFY, HDFCBANK, ICICIBANK, WIPRO, SBIN, TATAPOWER, TATASTEEL, HINDUNILVR, BAJFINANCE, ADANIENT, MARUTI, SUNPHARMA, ONGC, POWERGRID, COALINDIA, NTPC, LT, AXISBANK
 
-### Phase 2: Authentication ✅
-- JWT-based auth
-- Password hashing with bcrypt
-- Protected routes
-- Login/Register pages
+## 🎨 Design System
 
-### Phase 3: Market Data ✅
-- Yahoo Finance integration
-- 20 NIFTY 50 stocks seeded
-- Price ingestion worker (15s interval)
-- REST API for market data
-
-### Phase 4: Real-Time Layer ✅
-- Socket.io WebSocket server
-- Live price updates broadcast
-- Portfolio update notifications
-- Trade confirmation events
-- Market status (open/closed)
-
-### Phase 5: Trading Engine ✅
-- Buy/Sell order processing
-- Atomic balance updates
-- Portfolio tracking
-- Transaction history
-- Weighted average cost calculation
-- Realized P&L on sells
-
-### Phase 6: Portfolio & Analytics ✅
-- Holdings view with live P&L
-- Portfolio summary
-- Sector allocation (pie chart)
-- P&L over time chart
-- Trade statistics
-- Best/worst trade tracking
-
-### Phase 7: Leaderboard ✅
-- User ranking by portfolio value
-- Top traders list
-- My rank display
-- Percentile calculation
-- Real-time leaderboard updates (60s)
-
-### Phase 8: Security & Polish ✅
-- Helmet.js for security headers
-- CORS configuration
-- Rate limiting
-- Input validation with Joi
-- Error handling middleware
-- Mobile responsive design
-
-## 🚀 Deployment
-
-### Backend (Render)
-1. Push to GitHub
-2. Connect to Render
-3. Add environment variables
-4. Deploy
-
-### Frontend (Vercel)
-1. Push to GitHub
-2. Connect to Vercel
-3. Set build command: `npm run build`
-4. Set output directory: `dist`
-5. Add environment variables
-6. Deploy
-
-## 📱 Mobile App
-
-The frontend is fully responsive and works as a PWA. To use on mobile:
-1. Open the deployed URL in your mobile browser
-2. Add to home screen
-3. Use like a native app
-
-## 🎨 Design Highlights
-
-- Dark theme with emerald accents
-- Glass morphism effects
-- Smooth animations
-- Real-time price flash indicators
-- Color-coded P&L (green/red)
-- Responsive tables and charts
+| Token | Color | Usage |
+|-------|-------|-------|
+| `saffron` | `#ff9933` | Primary accent, borders, glows |
+| `primary-400` | `#facc15` | Gold highlights, gradient text |
+| `dark-900` | `#0a0e1a` | Background |
+| `dark-800` | `#131b2e` | Card surfaces |
+| `profit` | `#22c55e` | Positive change |
+| `loss` | `#ef4444` | Negative change |
+| `accent-400` | `#2dd4bf` | Cyber teal secondary |
 
 ## 📝 License
 
-MIT License - Feel free to use and modify!
+MIT License
 
 ## 🙏 Credits
 
-- Market data from Yahoo Finance
-- Icons from Lucide React
-- Charts from Recharts
-- UI powered by Tailwind CSS
+- Market data: Yahoo Finance API
+- Charts: [TradingView Lightweight Charts](https://github.com/nickaknudson/lightweight-charts)
+- Icons: Lucide React
+- UI: TailwindCSS
+- Fonts: Inter + JetBrains Mono
 
 ---
 
-**Trade virtual money. Feel real markets. Learn everything.**
+**NidhiKosh — The market never sleeps. Neither does the dashboard.**
 
-Built with ❤️ using the MERN stack + Socket.io
+Built with the MERN stack + Socket.io + TradingView Lightweight Charts

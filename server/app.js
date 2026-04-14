@@ -32,10 +32,15 @@ connectDB();
 const app = express();
 const httpServer = createServer(app);
 
+// CORS origin — accept any localhost port in dev
+const allowedOrigins = env.isProduction()
+  ? [env.FRONTEND_URL]
+  : [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
+
 // Initialize Socket.io
 const io = new Server(httpServer, {
   cors: {
-    origin: env.FRONTEND_URL,
+    origin: allowedOrigins,
     credentials: true,
   },
   pingTimeout: 60000,
@@ -61,7 +66,7 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],

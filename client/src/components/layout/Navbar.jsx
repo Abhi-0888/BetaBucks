@@ -43,8 +43,8 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #facc15 0%, #ff9933 100%)' }}>
+              <TrendingUp className="w-5 h-5 text-dark-900" />
             </div>
             <span className="text-xl font-bold gradient-text">NidhiKosh</span>
           </Link>

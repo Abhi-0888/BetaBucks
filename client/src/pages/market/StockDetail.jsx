@@ -1,36 +1,218 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { 
-  ArrowLeft, 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  BarChart3, 
-  DollarSign,
-  Clock,
-  Target,
-  Package,
-  Wallet,
-  Percent,
-  ChevronRight,
-  Sparkles
+import { createChart, ColorType, CrosshairMode } from 'lightweight-charts';
+import {
+  ArrowLeft, TrendingUp, TrendingDown, Activity, BarChart3, DollarSign,
+  Clock, Target, Package, Wallet, Percent, ChevronRight, Sparkles,
+  Layers, Shield, Gauge, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import { marketAPI } from '../../api/market.api.js';
 import { useLivePrice } from '../../hooks/useLivePrice.js';
 import { usePortfolio } from '../../hooks/usePortfolio.js';
 import OrderModal from '../../components/ui/OrderModal.jsx';
-import { formatINR, formatLargeNumber, formatPercent } from '../../utils/formatters.js';
+import { formatINR, formatLargeNumber, formatPercent, formatNumber } from '../../utils/formatters.js';
 
+// ============================================================
+// TradingView Chart Component
+// ============================================================
+const TVChart = ({ symbol, range, interval }) => {
+  const chartRef = useRef(null);
+  const containerRef = useRef(null);
+
+  const { data: histData } = useQuery(
+    ['history', symbol, range, interval],
+    () => marketAPI.getStockHistory(symbol, range, interval),
+    { staleTime: 30000 }
+  );
+
+  useEffect(() => {
+    if (!containerRef.current || !histData?.data?.length) return;
+
+    // Cleanup old chart
+    if (chartRef.current) {
+      chartRef.current.remove();
+      chartRef.current = null;
+    }
+
+    const chart = createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
+      height: 360,
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#64748b',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        fontSize: 11,
+      },
+      grid: {
+        vertLines: { color: 'rgba(255,153,51,0.04)' },
+        horzLines: { color: 'rgba(255,153,51,0.04)' },
+      },
+      crosshair: {
+        mode: CrosshairMode.Normal,
+        vertLine: { color: 'rgba(255,153,51,0.3)', width: 1, style: 2 },
+        horzLine: { color: 'rgba(255,153,51,0.3)', width: 1, style: 2 },
+      },
+      rightPriceScale: {
+        borderColor: 'rgba(255,153,51,0.1)',
+        scaleMargins: { top: 0.1, bottom: 0.2 },
+      },
+      timeScale: {
+        borderColor: 'rgba(255,153,51,0.1)',
+        timeVisible: range === '1d' || range === '5d',
+        secondsVisible: false,
+      },
+      handleScroll: { vertTouchDrag: false },
+    });
+
+    chartRef.current = chart;
+
+    const candles = histData.data;
+
+    // Main candlestick series
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: '#22c55e',
+      downColor: '#ef4444',
+      borderUpColor: '#22c55e',
+      borderDownColor: '#ef4444',
+      wickUpColor: '#22c55e80',
+      wickDownColor: '#ef444480',
+    });
+
+    const candleData = candles.map(c => ({
+      time: c.time || Math.floor(new Date(c.timestamp).getTime() / 1000),
+      open: c.open, high: c.high, low: c.low, close: c.close,
+    }));
+    candleSeries.setData(candleData);
+
+    // VWAP overlay line
+    if (candles[0]?.vwap) {
+      const vwapSeries = chart.addLineSeries({
+        color: '#ff993380',
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      const vwapData = candles.filter(c => c.vwap).map(c => ({
+        time: c.time || Math.floor(new Date(c.timestamp).getTime() / 1000),
+        value: c.vwap,
+      }));
+      vwapSeries.setData(vwapData);
+    }
+
+    // Volume histogram
+    const volumeSeries = chart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'volume',
+    });
+    chart.priceScale('volume').applyOptions({
+      scaleMargins: { top: 0.85, bottom: 0 },
+    });
+    const volumeData = candles.map(c => ({
+      time: c.time || Math.floor(new Date(c.timestamp).getTime() / 1000),
+      value: c.volume,
+      color: c.close >= c.open ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
+    }));
+    volumeSeries.setData(volumeData);
+
+    chart.timeScale().fitContent();
+
+    // Resize handler
+    const handleResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
+    };
+  }, [histData, range]);
+
+  return <div ref={containerRef} className="w-full" />;
+};
+
+// ============================================================
+// MarketDepth Component — Bid/Ask Table
+// ============================================================
+const MarketDepthPanel = ({ depth }) => {
+  if (!depth || !depth.bids?.length) return null;
+  const maxQty = Math.max(
+    ...depth.bids.map(b => b.qty),
+    ...depth.asks.map(a => a.qty),
+    1
+  );
+
+  return (
+    <div className="card-vyuha">
+      <div className="flex items-center gap-2 mb-3">
+        <Layers className="w-4 h-4 text-saffron" />
+        <h4 className="text-sm font-semibold text-white">Market Depth</h4>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        {/* Bids */}
+        <div>
+          <div className="flex justify-between text-dark-500 mb-1 px-1">
+            <span>Bid</span><span>Qty</span>
+          </div>
+          {depth.bids.map((b, i) => (
+            <div key={i} className="relative flex justify-between px-1 py-0.5 rounded">
+              <div className="absolute inset-0 bg-profit/10 rounded" style={{ width: `${(b.qty / maxQty) * 100}%` }} />
+              <span className="relative text-profit font-mono">{formatINR(b.price)}</span>
+              <span className="relative text-dark-400 font-mono">{formatNumber(b.qty)}</span>
+            </div>
+          ))}
+          <div className="text-profit text-xs mt-1 px-1 font-semibold">Total: {formatNumber(depth.totalBuyQty)}</div>
+        </div>
+        {/* Asks */}
+        <div>
+          <div className="flex justify-between text-dark-500 mb-1 px-1">
+            <span>Ask</span><span>Qty</span>
+          </div>
+          {depth.asks.map((a, i) => (
+            <div key={i} className="relative flex justify-between px-1 py-0.5 rounded">
+              <div className="absolute inset-0 right-0 bg-loss/10 rounded" style={{ width: `${(a.qty / maxQty) * 100}%`, marginLeft: 'auto' }} />
+              <span className="relative text-loss font-mono">{formatINR(a.price)}</span>
+              <span className="relative text-dark-400 font-mono">{formatNumber(a.qty)}</span>
+            </div>
+          ))}
+          <div className="text-loss text-xs mt-1 px-1 font-semibold">Total: {formatNumber(depth.totalSellQty)}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// StatCard helper
+// ============================================================
+const StatCard = ({ label, value, sub, icon: Icon, color = 'text-saffron' }) => (
+  <div className="bg-dark-800/50 rounded-xl p-3 border border-dark-700/50 hover:border-saffron/20 transition-all group">
+    <div className="flex items-center gap-2 text-dark-400 text-xs mb-1.5">
+      {Icon && <Icon className={`w-3.5 h-3.5 group-hover:${color} transition-colors`} />}
+      <span>{label}</span>
+    </div>
+    <p className="text-lg font-bold text-white font-mono">{value}</p>
+    {sub && <p className="text-xs text-dark-500 mt-0.5">{sub}</p>}
+  </div>
+);
+
+// ============================================================
+// MAIN: StockDetail
+// ============================================================
 const StockDetail = () => {
   const { symbol } = useParams();
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
-  
+  const [chartRange, setChartRange] = useState('1d');
+  const [chartInterval, setChartInterval] = useState('5m');
+
   const { data: stockData, isLoading } = useQuery(
     ['stock', symbol],
     () => marketAPI.getStockDetail(symbol),
-    { staleTime: 15000 }
+    { staleTime: 10000, refetchInterval: 15000 }
   );
 
   const { price, changePercent, flash } = useLivePrice(symbol);
@@ -39,251 +221,192 @@ const StockDetail = () => {
   const stock = stockData?.data;
   const currentPrice = price || stock?.currentPrice || 0;
   const currentChange = changePercent || stock?.changePercent || 0;
-  
-  // Find if user holds this stock
   const userHolding = holdings?.holdings?.find(h => h.symbol === symbol);
+  const isProfit = currentChange >= 0;
+
+  // Price range bar position
+  const priceRangePos = stock?.dayHigh && stock?.dayLow && stock.dayHigh !== stock.dayLow
+    ? ((currentPrice - stock.dayLow) / (stock.dayHigh - stock.dayLow)) * 100
+    : 50;
+
+  const ranges = [
+    { r: '1d', i: '5m', label: '1D' },
+    { r: '5d', i: '15m', label: '5D' },
+    { r: '1mo', i: '1d', label: '1M' },
+    { r: '3mo', i: '1d', label: '3M' },
+    { r: '6mo', i: '1d', label: '6M' },
+    { r: '1y', i: '1d', label: '1Y' },
+  ];
 
   if (isLoading || !stock) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="h-40 bg-dark-800 rounded-xl" />
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-32 bg-dark-800 rounded-xl" />
-          <div className="h-32 bg-dark-800 rounded-xl" />
+        <div className="h-10 bg-dark-800 rounded-lg w-32" />
+        <div className="h-48 bg-dark-800 rounded-xl" />
+        <div className="h-[360px] bg-dark-800 rounded-xl" />
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-dark-800 rounded-xl" />)}
         </div>
       </div>
     );
   }
 
-  const isProfit = currentChange >= 0;
-
   return (
-    <div className="space-y-6 pb-8">
-      {/* Back Button */}
-      <Link to="/market" className="inline-flex items-center gap-2 text-dark-400 hover:text-white transition-colors group">
+    <div className="space-y-5 pb-8 animate-fadeIn">
+      {/* Back */}
+      <Link to="/market" className="inline-flex items-center gap-2 text-dark-400 hover:text-saffron transition-colors group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        <span className="font-medium">Back to Market</span>
+        <span className="font-medium text-sm">Back to Market</span>
       </Link>
 
-      {/* Hero Stock Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-dark-800 via-dark-900 to-dark-800 border border-dark-700 p-6">
-        {/* Background Effects */}
-        <div className={`absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-20 ${isProfit ? 'bg-accent-success' : 'bg-accent-error'}`} />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent-500/10 rounded-full blur-3xl" />
-        
-        <div className="relative">
-          {/* Stock Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-            <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold ${
-                isProfit 
-                  ? 'bg-accent-success/20 text-accent-success' 
-                  : 'bg-accent-error/20 text-accent-error'
+      {/* Hero */}
+      <div className="relative overflow-hidden card-vyuha p-6">
+        <div className={`absolute top-0 right-0 w-72 h-72 rounded-full blur-3xl opacity-10 ${isProfit ? 'bg-profit' : 'bg-loss'}`} />
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-xl font-bold ${
+              isProfit ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss'
+            }`}>
+              {stock.symbol.split('.')[0].slice(0, 2)}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">{stock.shortName}</h1>
+              <div className="flex items-center gap-2 text-dark-400 text-sm mt-1 flex-wrap">
+                <span className="font-medium text-white font-mono">{stock.symbol}</span>
+                <span className="badge-vyuha">{stock.sector || 'NSE'}</span>
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className={`text-4xl font-bold font-mono text-white transition-all duration-300 ${
+              flash === 'green' ? 'text-profit scale-[1.02]' : flash === 'red' ? 'text-loss scale-[1.02]' : ''
+            }`}>
+              {formatINR(currentPrice)}
+            </div>
+            <div className="flex items-center justify-end gap-2 mt-1.5">
+              <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-sm font-semibold ${
+                isProfit ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss'
               }`}>
-                {stock.symbol.split('.')[0].slice(0, 2)}
+                {isProfit ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                {isProfit ? '+' : ''}{stock.changePercent?.toFixed(2)}%
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{stock.shortName}</h1>
-                <div className="flex items-center gap-2 text-dark-400 text-sm mt-1">
-                  <span className="font-medium text-white">{stock.symbol}</span>
-                  <span>•</span>
-                  <span>{stock.exchange}</span>
-                  <span>•</span>
-                  <span className="px-2 py-0.5 bg-dark-700 rounded-full text-xs">{stock.sector}</span>
-                </div>
-              </div>
+              <span className="text-dark-500 text-sm font-mono">{formatINR(stock.changeAmount)}</span>
             </div>
-            
-            {/* Price Display */}
-            <div className="text-right">
-              <div className={`text-5xl font-bold text-white transition-all duration-300 ${
-                flash === 'green' ? 'text-accent-success scale-105' : flash === 'red' ? 'text-accent-error scale-105' : ''
-              }`}>
-                {formatINR(currentPrice)}
-              </div>
-              <div className={`flex items-center justify-end gap-2 mt-2 ${isProfit ? 'text-accent-success' : 'text-accent-error'}`}>
-                <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
-                  isProfit ? 'bg-accent-success/20' : 'bg-accent-error/20'
-                }`}>
-                  {isProfit ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                  <span>{isProfit ? '+' : ''}{stock.changePercent?.toFixed(2) || '0.00'}%</span>
-                </div>
-                <span className="text-dark-400 text-sm">{formatINR(stock.changeAmount)}</span>
-              </div>
-              <div className="flex items-center justify-end gap-1 text-dark-500 text-xs mt-2">
-                <Clock className="w-3 h-3" />
-                <span>Last updated: {new Date(stock.lastUpdated).toLocaleTimeString()}</span>
-              </div>
-            </div>
+            {stock.vwap && (
+              <div className="text-xs text-dark-500 mt-1 font-mono">VWAP: {formatINR(stock.vwap)}</div>
+            )}
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setIsBuyModalOpen(true)}
-              className="flex-1 bg-accent-success hover:bg-accent-success/90 text-dark-900 font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-accent-success/25 hover:-translate-y-0.5"
-            >
-              <TrendingUp className="w-5 h-5" />
-              Buy Stock
-            </button>
-            <button
-              onClick={() => setIsSellModalOpen(true)}
-              disabled={!userHolding || userHolding.quantity === 0}
-              className="flex-1 bg-accent-error hover:bg-accent-error/90 disabled:bg-dark-700 disabled:text-dark-500 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-accent-error/25 hover:-translate-y-0.5"
-            >
-              <TrendingDown className="w-5 h-5" />
-              Sell {userHolding ? `(${userHolding.quantity})` : ''}
-            </button>
+        {/* Price Range Bar */}
+        <div className="mt-4 px-1">
+          <div className="flex justify-between text-xs text-dark-500 mb-1">
+            <span>L: {formatINR(stock.dayLow)}</span>
+            <span>H: {formatINR(stock.dayHigh)}</span>
+          </div>
+          <div className="relative h-2 bg-dark-700 rounded-full overflow-hidden">
+            <div className="absolute h-full bg-gradient-to-r from-loss via-saffron to-profit rounded-full" style={{ width: '100%' }} />
+            <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg border-2 border-saffron transition-all" style={{ left: `${priceRangePos}%` }} />
           </div>
         </div>
-      </div>
 
-      {/* Stats Grid - Modern Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-dark-800/50 rounded-xl p-4 border border-dark-700/50 hover:border-accent-500/30 transition-all group">
-          <div className="flex items-center gap-2 text-dark-400 text-sm mb-2">
-            <Target className="w-4 h-4 group-hover:text-accent-500 transition-colors" />
-            <span>Day High</span>
-          </div>
-          <p className="text-xl font-bold text-white">{formatINR(stock.dayHigh)}</p>
-          <div className="mt-1 h-1 bg-dark-700 rounded-full overflow-hidden">
-            <div className="h-full bg-accent-success/50 rounded-full" style={{ width: '70%' }} />
-          </div>
-        </div>
-        
-        <div className="bg-dark-800/50 rounded-xl p-4 border border-dark-700/50 hover:border-accent-500/30 transition-all group">
-          <div className="flex items-center gap-2 text-dark-400 text-sm mb-2">
-            <Target className="w-4 h-4 group-hover:text-accent-error transition-colors" />
-            <span>Day Low</span>
-          </div>
-          <p className="text-xl font-bold text-white">{formatINR(stock.dayLow)}</p>
-          <div className="mt-1 h-1 bg-dark-700 rounded-full overflow-hidden">
-            <div className="h-full bg-accent-error/50 rounded-full" style={{ width: '30%' }} />
-          </div>
-        </div>
-        
-        <div className="bg-dark-800/50 rounded-xl p-4 border border-dark-700/50 hover:border-accent-500/30 transition-all group">
-          <div className="flex items-center gap-2 text-dark-400 text-sm mb-2">
-            <BarChart3 className="w-4 h-4 group-hover:text-accent-500 transition-colors" />
-            <span>Volume</span>
-          </div>
-          <p className="text-xl font-bold text-white">{formatLargeNumber(stock.volume)}</p>
-          <p className="text-xs text-dark-500 mt-1">shares traded today</p>
-        </div>
-        
-        <div className="bg-dark-800/50 rounded-xl p-4 border border-dark-700/50 hover:border-accent-500/30 transition-all group">
-          <div className="flex items-center gap-2 text-dark-400 text-sm mb-2">
-            <DollarSign className="w-4 h-4 group-hover:text-accent-500 transition-colors" />
-            <span>Market Cap</span>
-          </div>
-          <p className="text-xl font-bold text-white">{formatLargeNumber(stock.marketCap)}</p>
-          <p className="text-xs text-dark-500 mt-1">company valuation</p>
-        </div>
-      </div>
-
-      {/* Additional Stats Row */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-dark-800/30 rounded-xl p-4 border border-dark-700/30">
-          <p className="text-dark-400 text-xs mb-1">52 Week High</p>
-          <p className="text-lg font-semibold text-white">{formatINR(stock.fiftyTwoWeekHigh)}</p>
-        </div>
-        <div className="bg-dark-800/30 rounded-xl p-4 border border-dark-700/30">
-          <p className="text-dark-400 text-xs mb-1">52 Week Low</p>
-          <p className="text-lg font-semibold text-white">{formatINR(stock.fiftyTwoWeekLow)}</p>
-        </div>
-        <div className="bg-dark-800/30 rounded-xl p-4 border border-dark-700/30">
-          <p className="text-dark-400 text-xs mb-1">P/E Ratio</p>
-          <p className="text-lg font-semibold text-white">{stock.peRatio?.toFixed(2) || 'N/A'}</p>
-        </div>
-      </div>
-
-      {/* Your Position - Enhanced */}
-      {userHolding && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500/10 via-dark-800 to-dark-900 border border-primary-500/30 p-6">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-2xl" />
-          
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-primary-500" />
-              <h3 className="text-lg font-semibold text-white">Your Position</h3>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-dark-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-1 text-dark-400 text-xs mb-1">
-                  <Package className="w-3 h-3" />
-                  <span>Quantity</span>
-                </div>
-                <p className="text-2xl font-bold text-white">{userHolding.quantity}</p>
-                <p className="text-xs text-dark-500">shares owned</p>
-              </div>
-              
-              <div className="bg-dark-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-1 text-dark-400 text-xs mb-1">
-                  <Target className="w-3 h-3" />
-                  <span>Avg Cost</span>
-                </div>
-                <p className="text-2xl font-bold text-white">{formatINR(userHolding.averageCostPrice)}</p>
-                <p className="text-xs text-dark-500">per share</p>
-              </div>
-              
-              <div className="bg-dark-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-1 text-dark-400 text-xs mb-1">
-                  <Wallet className="w-3 h-3" />
-                  <span>Current Value</span>
-                </div>
-                <p className="text-2xl font-bold text-white">{formatINR(userHolding.currentValue)}</p>
-                <p className="text-xs text-dark-500">total value</p>
-              </div>
-              
-              <div className="bg-dark-800/50 rounded-lg p-3">
-                <div className="flex items-center gap-1 text-dark-400 text-xs mb-1">
-                  <Percent className="w-3 h-3" />
-                  <span>Unrealized P&L</span>
-                </div>
-                <p className={`text-2xl font-bold ${userHolding.unrealisedPnL >= 0 ? 'text-accent-success' : 'text-accent-error'}`}>
-                  {formatINR(userHolding.unrealisedPnL)}
-                </p>
-                <p className={`text-xs ${userHolding.unrealisedPnL >= 0 ? 'text-accent-success' : 'text-accent-error'}`}>
-                  {userHolding.unrealisedPnL >= 0 ? '↑' : '↓'} {Math.abs((userHolding.unrealisedPnL / userHolding.currentValue) * 100).toFixed(2)}%
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Not Holding Message */}
-      {!userHolding && (
-        <div className="bg-dark-800/30 rounded-xl p-6 border border-dashed border-dark-600 text-center">
-          <Package className="w-12 h-12 text-dark-500 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-white mb-1">You don't own this stock yet</h3>
-          <p className="text-dark-400 text-sm mb-4">Start building your portfolio by buying shares</p>
-          <button
-            onClick={() => setIsBuyModalOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-2 bg-accent-500 hover:bg-accent-500/90 text-dark-900 font-semibold rounded-lg transition-all hover:shadow-lg hover:shadow-accent-500/25"
-          >
-            Buy Now
-            <ChevronRight className="w-4 h-4" />
+        {/* Buy/Sell */}
+        <div className="flex gap-3 mt-5">
+          <button onClick={() => setIsBuyModalOpen(true)} className="flex-1 btn-success py-3 text-sm">
+            <TrendingUp className="w-4 h-4 mr-1" /> Buy
+          </button>
+          <button onClick={() => setIsSellModalOpen(true)} disabled={!userHolding || userHolding.quantity === 0}
+            className="flex-1 btn-danger py-3 text-sm">
+            <TrendingDown className="w-4 h-4 mr-1" /> Sell {userHolding ? `(${userHolding.quantity})` : ''}
           </button>
         </div>
-      )}
+      </div>
+
+      {/* Chart */}
+      <div className="card-vyuha p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-white">Price Chart</h3>
+          <div className="flex gap-1">
+            {ranges.map(({ r, i, label }) => (
+              <button key={r} onClick={() => { setChartRange(r); setChartInterval(i); }}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                  chartRange === r ? 'bg-saffron/10 text-saffron border border-saffron/30' : 'text-dark-500 hover:text-white'
+                }`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <TVChart symbol={symbol} range={chartRange} interval={chartInterval} />
+      </div>
+
+      {/* Data Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Open" value={formatINR(stock.openPrice || stock.previousClose)} icon={Activity} />
+        <StatCard label="Prev Close" value={formatINR(stock.previousClose)} icon={Clock} />
+        <StatCard label="Volume" value={formatLargeNumber(stock.volume)} sub="shares" icon={BarChart3} />
+        <StatCard label="Turnover" value={formatLargeNumber(stock.turnover)} icon={DollarSign} />
+        <StatCard label="VWAP" value={stock.vwap ? formatINR(stock.vwap) : 'N/A'} icon={Gauge} />
+        <StatCard label="Market Cap" value={formatLargeNumber(stock.marketCap)} icon={DollarSign} />
+        <StatCard label="Upper Circuit" value={stock.upperCircuit ? formatINR(stock.upperCircuit) : 'N/A'} icon={Shield} />
+        <StatCard label="Lower Circuit" value={stock.lowerCircuit ? formatINR(stock.lowerCircuit) : 'N/A'} icon={Shield} />
+      </div>
+
+      {/* 52-Week + Fundamentals */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard label="52W High" value={formatINR(stock.fiftyTwoWeekHigh)} icon={Target} />
+        <StatCard label="52W Low" value={formatINR(stock.fiftyTwoWeekLow)} icon={Target} />
+        <StatCard label="P/E Ratio" value={stock.peRatio?.toFixed(2) || 'N/A'} icon={Percent} />
+        <StatCard label="P/B Ratio" value={stock.pbRatio?.toFixed(2) || 'N/A'} icon={Percent} />
+        <StatCard label="Div Yield" value={stock.dividendYield ? `${stock.dividendYield}%` : 'N/A'} icon={DollarSign} />
+      </div>
+
+      {/* Market Depth + Position */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <MarketDepthPanel depth={stock.marketDepth} />
+
+        {userHolding ? (
+          <div className="card-vyuha">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-saffron" />
+              <h4 className="text-sm font-semibold text-white">Your Position</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-dark-900/50 rounded-lg p-3">
+                <div className="text-dark-500 text-xs"><Package className="w-3 h-3 inline mr-1" />Qty</div>
+                <div className="text-xl font-bold text-white font-mono">{userHolding.quantity}</div>
+              </div>
+              <div className="bg-dark-900/50 rounded-lg p-3">
+                <div className="text-dark-500 text-xs"><Target className="w-3 h-3 inline mr-1" />Avg Cost</div>
+                <div className="text-xl font-bold text-white font-mono">{formatINR(userHolding.averageCostPrice)}</div>
+              </div>
+              <div className="bg-dark-900/50 rounded-lg p-3">
+                <div className="text-dark-500 text-xs"><Wallet className="w-3 h-3 inline mr-1" />Value</div>
+                <div className="text-xl font-bold text-white font-mono">{formatINR(userHolding.currentValue)}</div>
+              </div>
+              <div className="bg-dark-900/50 rounded-lg p-3">
+                <div className="text-dark-500 text-xs"><Percent className="w-3 h-3 inline mr-1" />P&L</div>
+                <div className={`text-xl font-bold font-mono ${userHolding.unrealisedPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                  {formatINR(userHolding.unrealisedPnL)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="card-vyuha flex flex-col items-center justify-center py-8">
+            <Package className="w-10 h-10 text-dark-600 mb-3" />
+            <p className="text-white font-medium mb-1">No position</p>
+            <p className="text-dark-500 text-sm mb-4">Buy shares to build your portfolio</p>
+            <button onClick={() => setIsBuyModalOpen(true)} className="btn-primary px-6 py-2 text-sm">
+              Buy Now <ChevronRight className="w-3.5 h-3.5 ml-1" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Order Modals */}
-      <OrderModal
-        isOpen={isBuyModalOpen}
-        onClose={() => setIsBuyModalOpen(false)}
-        stock={stock}
-        type="BUY"
-        balance={summary?.cashBalance || 0}
-      />
-      <OrderModal
-        isOpen={isSellModalOpen}
-        onClose={() => setIsSellModalOpen(false)}
-        stock={stock}
-        type="SELL"
-        balance={summary?.cashBalance || 0}
-      />
+      <OrderModal isOpen={isBuyModalOpen} onClose={() => setIsBuyModalOpen(false)} stock={stock} type="BUY" balance={summary?.cashBalance || 0} />
+      <OrderModal isOpen={isSellModalOpen} onClose={() => setIsSellModalOpen(false)} stock={stock} type="SELL" balance={summary?.cashBalance || 0} />
     </div>
   );
 };

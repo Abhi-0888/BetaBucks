@@ -241,6 +241,124 @@ export const getSectors = asyncHandler(async (req, res) => {
   });
 });
 
+// ============================================================
+// NIDHIKOSH — Living Dashboard Endpoints
+// ============================================================
+
+// Get full market status (phase, IST time, frozen mode)
+export const getMarketStatus = asyncHandler(async (req, res) => {
+  const { getFullMarketStatus } = await import('../services/marketStatus.service.js');
+  const status = getFullMarketStatus();
+  res.json({ success: true, data: status });
+});
+
+// Get latest market snapshot (for post-market display)
+export const getMarketSnapshot = asyncHandler(async (req, res) => {
+  const { getLatestSnapshot } = await import('../services/snapshot.service.js');
+  const snapshot = await getLatestSnapshot();
+  res.json({ success: true, data: snapshot });
+});
+
+// Get sector heatmap
+export const getSectorHeatmap = asyncHandler(async (req, res) => {
+  const stocks = await Stock.find({ sector: { $ne: null } }).lean();
+  const sectorMap = {};
+  stocks.forEach(s => {
+    const sec = s.sector;
+    if (!sectorMap[sec]) sectorMap[sec] = { stocks: [], totalTurnover: 0, totalVolume: 0 };
+    sectorMap[sec].stocks.push(s);
+    sectorMap[sec].totalTurnover += s.turnover || 0;
+    sectorMap[sec].totalVolume += s.volume || 0;
+  });
+  const heatmap = Object.entries(sectorMap).map(([sector, data]) => {
+    const sorted = data.stocks.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+    const avgChange = data.stocks.reduce((sum, s) => sum + (s.changePercent || 0), 0) / data.stocks.length;
+    return {
+      sector,
+      avgChange: Math.round(avgChange * 100) / 100,
+      totalTurnover: data.totalTurnover,
+      totalVolume: data.totalVolume,
+      stockCount: data.stocks.length,
+      stocks: data.stocks.map(s => ({
+        symbol: s.symbol, shortName: s.shortName,
+        currentPrice: s.currentPrice, changePercent: s.changePercent,
+        volume: s.volume, turnover: s.turnover,
+      })),
+    };
+  }).sort((a, b) => b.avgChange - a.avgChange);
+  res.json({ success: true, data: heatmap });
+});
+
+// Get NidhiKosh movers — gainers, losers, volume shockers, value leaders
+export const getVyuhaMovers = asyncHandler(async (req, res) => {
+  const stocks = await Stock.find({}).lean();
+
+  const byChange = [...stocks].sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+  const topGainers = byChange.filter(s => s.changePercent > 0).slice(0, 10).map(s => ({
+    symbol: s.symbol, shortName: s.shortName, currentPrice: s.currentPrice,
+    changePercent: s.changePercent, volume: s.volume, vwap: s.vwap,
+  }));
+  const topLosers = byChange.filter(s => s.changePercent < 0).reverse().slice(0, 10).map(s => ({
+    symbol: s.symbol, shortName: s.shortName, currentPrice: s.currentPrice,
+    changePercent: s.changePercent, volume: s.volume, vwap: s.vwap,
+  }));
+
+  const volumeShockers = stocks
+    .filter(s => s.avgDailyVolume > 0 && s.volume > s.avgDailyVolume * 2)
+    .sort((a, b) => (b.volume / (b.avgDailyVolume || 1)) - (a.volume / (a.avgDailyVolume || 1)))
+    .slice(0, 10)
+    .map(s => ({
+      symbol: s.symbol, shortName: s.shortName, volume: s.volume,
+      avgVolume: s.avgDailyVolume,
+      volumeRatio: Math.round((s.volume / (s.avgDailyVolume || 1)) * 100) / 100,
+      changePercent: s.changePercent, currentPrice: s.currentPrice,
+    }));
+
+  const valueLeaders = [...stocks]
+    .sort((a, b) => (b.turnover || 0) - (a.turnover || 0))
+    .slice(0, 10)
+    .map(s => ({
+      symbol: s.symbol, shortName: s.shortName,
+      turnover: s.turnover, changePercent: s.changePercent, currentPrice: s.currentPrice,
+    }));
+
+  res.json({
+    success: true,
+    data: { topGainers, topLosers, volumeShockers, valueLeaders },
+  });
+});
+
+// Get market breadth (advance/decline ratio)
+export const getMarketBreadth = asyncHandler(async (req, res) => {
+  const stocks = await Stock.find({}).lean();
+  const advances = stocks.filter(s => s.changePercent > 0).length;
+  const declines = stocks.filter(s => s.changePercent < 0).length;
+  const unchanged = stocks.filter(s => !s.changePercent || s.changePercent === 0).length;
+  const total = stocks.length;
+  const adRatio = declines > 0 ? Math.round((advances / declines) * 100) / 100 : advances;
+
+  // Total market turnover
+  const totalTurnover = stocks.reduce((sum, s) => sum + (s.turnover || 0), 0);
+  const totalVolume = stocks.reduce((sum, s) => sum + (s.volume || 0), 0);
+
+  res.json({
+    success: true,
+    data: {
+      advances, declines, unchanged, total,
+      advanceDeclineRatio: adRatio,
+      totalTurnover, totalVolume,
+      sentiment: adRatio > 1.5 ? 'Bullish' : adRatio < 0.67 ? 'Bearish' : 'Neutral',
+    },
+  });
+});
+
+// Force snapshot capture (admin)
+export const forceSnapshotCapture = asyncHandler(async (req, res) => {
+  const { captureMarketSnapshot } = await import('../services/snapshot.service.js');
+  const snapshot = await captureMarketSnapshot();
+  res.json({ success: true, data: snapshot });
+});
+
 export default {
   getStocks,
   getStockDetail,
@@ -248,4 +366,10 @@ export default {
   searchStocks,
   getNifty50,
   getSectors,
+  getMarketStatus,
+  getMarketSnapshot,
+  getSectorHeatmap,
+  getVyuhaMovers,
+  getMarketBreadth,
+  forceSnapshotCapture,
 };

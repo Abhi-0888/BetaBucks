@@ -39,6 +39,32 @@ export const marketAPI = {
     const response = await axios.get('/api/market/sectors');
     return response.data;
   },
+
+  // NidhiKosh advanced endpoints
+  getMarketStatus: async () => {
+    const response = await axios.get('/api/market/status');
+    return response.data;
+  },
+
+  getSnapshot: async () => {
+    const response = await axios.get('/api/market/snapshot');
+    return response.data;
+  },
+
+  getHeatmap: async () => {
+    const response = await axios.get('/api/market/heatmap');
+    return response.data;
+  },
+
+  getMovers: async () => {
+    const response = await axios.get('/api/market/movers');
+    return response.data;
+  },
+
+  getBreadth: async () => {
+    const response = await axios.get('/api/market/breadth');
+    return response.data;
+  },
 };
 
 export default marketAPI;
