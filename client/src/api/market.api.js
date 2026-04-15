@@ -12,58 +12,58 @@ export const marketAPI = {
     if (order) queryParams.append('order', order);
     
     const response = await axios.get(`/api/market/stocks?${queryParams}`);
-    return response.data;
+    return response;
   },
 
   getStockDetail: async (symbol) => {
     const response = await axios.get(`/api/market/stocks/${symbol}`);
-    return response.data;
+    return response;
   },
 
   getStockHistory: async (symbol, range = '1d', interval = '5m') => {
     const response = await axios.get(`/api/market/stocks/${symbol}/history?range=${range}&interval=${interval}`);
-    return response.data;
+    return response;
   },
 
   searchStocks: async (query) => {
     const response = await axios.get(`/api/market/search?q=${encodeURIComponent(query)}`);
-    return response.data;
+    return response;
   },
 
   getNifty50: async () => {
     const response = await axios.get('/api/market/nifty50');
-    return response.data;
+    return response;
   },
 
   getSectors: async () => {
     const response = await axios.get('/api/market/sectors');
-    return response.data;
+    return response;
   },
 
   // NidhiKosh advanced endpoints
   getMarketStatus: async () => {
     const response = await axios.get('/api/market/status');
-    return response.data;
+    return response;
   },
 
   getSnapshot: async () => {
     const response = await axios.get('/api/market/snapshot');
-    return response.data;
+    return response;
   },
 
   getHeatmap: async () => {
     const response = await axios.get('/api/market/heatmap');
-    return response.data;
+    return response;
   },
 
   getMovers: async () => {
     const response = await axios.get('/api/market/movers');
-    return response.data;
+    return response;
   },
 
   getBreadth: async () => {
     const response = await axios.get('/api/market/breadth');
-    return response.data;
+    return response;
   },
 };
 

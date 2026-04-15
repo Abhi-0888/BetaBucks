@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { createChart, ColorType, CrosshairMode } from 'lightweight-charts';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Activity, BarChart3, DollarSign,
   Clock, Target, Package, Wallet, Percent, ChevronRight, Sparkles,
-  Layers, Shield, Gauge, ArrowUpRight, ArrowDownRight,
+  Layers, Shield, Gauge, ArrowUpRight, ArrowDownRight, Minus, Plus,
+  ShoppingCart, BadgeDollarSign,
 } from 'lucide-react';
 import { marketAPI } from '../../api/market.api.js';
+import { tradeAPI } from '../../api/trade.api.js';
 import { useLivePrice } from '../../hooks/useLivePrice.js';
 import { usePortfolio } from '../../hooks/usePortfolio.js';
 import OrderModal from '../../components/ui/OrderModal.jsx';
 import { formatINR, formatLargeNumber, formatPercent, formatNumber } from '../../utils/formatters.js';
+import toast from 'react-hot-toast';
 
 // ============================================================
 // TradingView Chart Component
@@ -132,6 +135,98 @@ const TVChart = ({ symbol, range, interval }) => {
   }, [histData, range]);
 
   return <div ref={containerRef} className="w-full" />;
+};
+
+// ============================================================
+// QuickTradePanel — Inline buy/sell from the chart
+// ============================================================
+const QuickTradePanel = ({ stock, currentPrice, userHolding, balance }) => {
+  const [qty, setQty] = useState(1);
+  const [mode, setMode] = useState('BUY');
+  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const isBuy = mode === 'BUY';
+  const total = qty * currentPrice;
+  const maxBuyQty = currentPrice > 0 ? Math.floor(balance / currentPrice) : 0;
+  const maxSellQty = userHolding?.quantity || 0;
+
+  const executeTrade = async () => {
+    if (qty <= 0) return;
+    if (isBuy && total > balance) { toast.error('Insufficient balance'); return; }
+    if (!isBuy && qty > maxSellQty) { toast.error('Not enough shares'); return; }
+
+    setLoading(true);
+    try {
+      const res = isBuy
+        ? await tradeAPI.buyStock(stock.symbol, qty)
+        : await tradeAPI.sellStock(stock.symbol, qty);
+      if (res.success) {
+        toast.success(`${isBuy ? 'Bought' : 'Sold'} ${qty} × ${stock.symbol.split('.')[0]} @ ${formatINR(currentPrice)}`);
+        queryClient.invalidateQueries('portfolio');
+        queryClient.invalidateQueries(['stock', stock.symbol]);
+        setQty(1);
+      }
+    } catch (err) {
+      console.error('Trade error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row items-stretch gap-3 p-3 bg-dark-900/60 rounded-xl border border-dark-700/50">
+      {/* Mode Toggle */}
+      <div className="flex rounded-lg overflow-hidden border border-dark-700 shrink-0">
+        <button onClick={() => setMode('BUY')}
+          className={`px-4 py-2 text-sm font-semibold transition-all ${isBuy ? 'bg-profit text-white' : 'bg-dark-800 text-dark-500 hover:text-white'}`}>
+          <ShoppingCart className="w-3.5 h-3.5 inline mr-1" /> Buy
+        </button>
+        <button onClick={() => setMode('SELL')}
+          className={`px-4 py-2 text-sm font-semibold transition-all ${!isBuy ? 'bg-loss text-white' : 'bg-dark-800 text-dark-500 hover:text-white'}`}>
+          <BadgeDollarSign className="w-3.5 h-3.5 inline mr-1" /> Sell
+        </button>
+      </div>
+
+      {/* Qty Controls */}
+      <div className="flex items-center gap-2 flex-1">
+        <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-8 h-8 rounded-lg bg-dark-800 hover:bg-dark-700 flex items-center justify-center text-dark-400 hover:text-white transition-colors">
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <input type="number" min="1" value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+          className="w-20 text-center bg-dark-800 border border-dark-700 rounded-lg py-1.5 text-white font-mono font-semibold text-sm focus:outline-none focus:border-saffron/50" />
+        <button onClick={() => setQty(qty + 1)} className="w-8 h-8 rounded-lg bg-dark-800 hover:bg-dark-700 flex items-center justify-center text-dark-400 hover:text-white transition-colors">
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+        <div className="flex gap-1 ml-1">
+          {[5, 10, 25].map(n => (
+            <button key={n} onClick={() => setQty(n)}
+              className={`px-2 py-1 text-xs rounded font-medium transition-colors ${qty === n ? 'bg-saffron/15 text-saffron' : 'bg-dark-800 text-dark-500 hover:text-white'}`}>
+              {n}
+            </button>
+          ))}
+          {isBuy && maxBuyQty > 0 && (
+            <button onClick={() => setQty(maxBuyQty)} className="px-2 py-1 text-xs rounded font-medium bg-dark-800 text-dark-500 hover:text-white">
+              Max
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Total + Execute */}
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="text-right">
+          <div className="text-[10px] text-dark-500 uppercase tracking-wider">Total</div>
+          <div className="text-sm font-bold font-mono text-white">{formatINR(total)}</div>
+        </div>
+        <button onClick={executeTrade} disabled={loading || qty <= 0 || (isBuy && total > balance) || (!isBuy && qty > maxSellQty)}
+          className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-40 ${
+            isBuy ? 'bg-profit hover:bg-green-600 text-white shadow-lg shadow-profit/20' : 'bg-loss hover:bg-red-600 text-white shadow-lg shadow-loss/20'
+          }`}>
+          {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : isBuy ? 'BUY' : 'SELL'}
+        </button>
+      </div>
+    </div>
+  );
 };
 
 // ============================================================
@@ -322,10 +417,19 @@ const StockDetail = () => {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="card-vyuha p-4">
+      {/* Chart + Quick Trade */}
+      <div className="card-vyuha p-4 space-y-3">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white">Price Chart</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold text-white">Price Chart</h3>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isProfit ? 'bg-profit' : 'bg-loss'}`} />
+              <span className="font-mono text-white">{formatINR(currentPrice)}</span>
+              <span className={`font-mono ${isProfit ? 'text-profit' : 'text-loss'}`}>
+                {isProfit ? '+' : ''}{currentChange?.toFixed(2)}%
+              </span>
+            </div>
+          </div>
           <div className="flex gap-1">
             {ranges.map(({ r, i, label }) => (
               <button key={r} onClick={() => { setChartRange(r); setChartInterval(i); }}
@@ -338,6 +442,9 @@ const StockDetail = () => {
           </div>
         </div>
         <TVChart symbol={symbol} range={chartRange} interval={chartInterval} />
+
+        {/* Quick Trade Panel — trade from chart */}
+        <QuickTradePanel stock={stock} currentPrice={currentPrice} userHolding={userHolding} balance={summary?.cashBalance || 0} />
       </div>
 
       {/* Data Grid */}

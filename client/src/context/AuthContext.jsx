@@ -19,9 +19,9 @@ export const AuthProvider = ({ children }) => {
       if (token && storedUser) {
         try {
           // Verify token by fetching current user
-          const data = await authAPI.getMe();
-          // Axios returns response.data directly - could be user object or {success, data} wrapper
-          const user = data.id ? data : (data.success ? data.data : null);
+          const res = await authAPI.getMe();
+          // Response format: { success, data: user }
+          const user = res?.data?.id ? res.data : (res?.id ? res : null);
           if (user) {
             setUser(user);
           } else {
@@ -43,10 +43,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       console.log('Attempting login...', email);
-      const data = await authAPI.login(email, password);
-      console.log('Login response:', data);
+      const res = await authAPI.login(email, password);
+      console.log('Login response:', res);
+      const data = res?.data || res;
       
-      // Axios interceptor returns response.data directly
       if (data.token && data.user) {
         const { user, token } = data;
         console.log('Login successful, storing token and user');
@@ -56,9 +56,9 @@ export const AuthProvider = ({ children }) => {
         toast.success('Login successful!');
         navigate('/dashboard');
         return true;
-      } else if (data.success === false) {
-        console.log('Login failed:', data.message);
-        toast.error(data.message || 'Login failed');
+      } else if (res.success === false || data.success === false) {
+        console.log('Login failed:', data.message || res.message);
+        toast.error(data.message || res.message || 'Login failed');
         return false;
       } else {
         console.log('Unexpected response format');
@@ -74,7 +74,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const data = await authAPI.register(name, email, password);
+      const res = await authAPI.register(name, email, password);
+      const data = res?.data || res;
       
       if (data.token && data.user) {
         const { user, token } = data;
@@ -84,8 +85,8 @@ export const AuthProvider = ({ children }) => {
         toast.success('Registration successful!');
         navigate('/dashboard');
         return true;
-      } else if (data.success === false) {
-        toast.error(data.message || 'Registration failed');
+      } else if (res.success === false || data.success === false) {
+        toast.error(data.message || res.message || 'Registration failed');
         return false;
       }
     } catch (error) {
