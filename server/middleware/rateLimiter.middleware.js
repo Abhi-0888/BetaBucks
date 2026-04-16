@@ -1,9 +1,9 @@
 import rateLimit from 'express-rate-limit';
 
-// Global rate limiter - 100 requests per 15 minutes
+// Global rate limiter - generous for real-time trading app
 export const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 300, // 300 requests per minute
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -39,7 +39,7 @@ export const authLimiter = rateLimit({
 // API rate limiter - for general API endpoints
 export const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 60,
+  max: 200,
   message: {
     success: false,
     message: 'Too many API requests, please slow down.',

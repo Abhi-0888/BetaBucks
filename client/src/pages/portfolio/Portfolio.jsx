@@ -40,58 +40,58 @@ const Portfolio = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary-500/10 rounded-lg">
+            <div className="p-2.5 bg-primary-500/10 rounded-lg shrink-0">
               <Wallet className="w-5 h-5 text-primary-400" />
             </div>
-            <div>
-              <p className="text-dark-500 text-sm">Total Value</p>
-              <p className="text-xl font-bold text-white">{formatINR(stats.totalPortfolioValue)}</p>
+            <div className="min-w-0">
+              <p className="text-dark-500 text-xs font-medium">Total Value</p>
+              <p className="text-base md:text-lg lg:text-xl font-bold text-white font-mono truncate" title={formatINR(stats.totalPortfolioValue)}>{formatINR(stats.totalPortfolioValue)}</p>
             </div>
           </div>
         </div>
-        <div className="card">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-500/10 rounded-lg">
+            <div className="p-2.5 bg-blue-500/10 rounded-lg shrink-0">
               <Wallet className="w-5 h-5 text-blue-400" />
             </div>
-            <div>
-              <p className="text-dark-500 text-sm">Cash Balance</p>
-              <p className="text-xl font-bold text-white">{formatINR(stats.cashBalance)}</p>
+            <div className="min-w-0">
+              <p className="text-dark-500 text-xs font-medium">Cash Balance</p>
+              <p className="text-base md:text-lg lg:text-xl font-bold text-white font-mono truncate" title={formatINR(stats.cashBalance)}>{formatINR(stats.cashBalance)}</p>
             </div>
           </div>
         </div>
-        <div className="card">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg ${stats.unrealisedPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10'}`}>
+            <div className={`p-2.5 rounded-lg shrink-0 ${stats.unrealisedPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10'}`}>
               {stats.unrealisedPnL >= 0 ? (
                 <TrendingUp className="w-5 h-5 text-profit" />
               ) : (
                 <TrendingDown className="w-5 h-5 text-loss" />
               )}
             </div>
-            <div>
-              <p className="text-dark-500 text-sm">Unrealized P&L</p>
-              <p className={`text-xl font-bold ${stats.unrealisedPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
+            <div className="min-w-0">
+              <p className="text-dark-500 text-xs font-medium">Unrealized P&L</p>
+              <p className={`text-base md:text-lg lg:text-xl font-bold font-mono truncate ${stats.unrealisedPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
                 {formatINR(stats.unrealisedPnL)}
               </p>
             </div>
           </div>
         </div>
-        <div className="card">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg ${stats.overallReturn >= 0 ? 'bg-profit/10' : 'bg-loss/10'}`}>
+            <div className={`p-2.5 rounded-lg shrink-0 ${stats.overallReturn >= 0 ? 'bg-profit/10' : 'bg-loss/10'}`}>
               {stats.overallReturn >= 0 ? (
                 <TrendingUp className="w-5 h-5 text-profit" />
               ) : (
                 <TrendingDown className="w-5 h-5 text-loss" />
               )}
             </div>
-            <div>
-              <p className="text-dark-500 text-sm">Overall Return</p>
-              <p className={`text-xl font-bold ${stats.overallReturn >= 0 ? 'text-profit' : 'text-loss'}`}>
+            <div className="min-w-0">
+              <p className="text-dark-500 text-xs font-medium">Overall Return</p>
+              <p className={`text-base md:text-lg lg:text-xl font-bold font-mono truncate ${stats.overallReturn >= 0 ? 'text-profit' : 'text-loss'}`}>
                 {formatPercent(stats.overallReturnPercent)}
               </p>
             </div>

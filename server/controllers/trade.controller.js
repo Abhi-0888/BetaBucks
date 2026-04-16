@@ -12,11 +12,21 @@ import {
   calcNewAvgCost 
 } from '../utils/tradeCalculations.js';
 import { asyncHandler } from '../middleware/errorHandler.middleware.js';
+import { isMarketOpen, getMarketPhase } from '../services/marketStatus.service.js';
 
 // Buy stock
 export const buyStock = asyncHandler(async (req, res) => {
   const { symbol, quantity } = req.body;
   const userId = req.userId;
+
+  // Block trades when market is closed
+  if (!isMarketOpen()) {
+    const phase = getMarketPhase();
+    return res.status(400).json({
+      success: false,
+      message: `Market is currently ${phase}. Trading is only allowed during market hours (9:15 AM - 3:30 PM IST).`,
+    });
+  }
 
   // Validate quantity
   if (!quantity || quantity < 1) {
@@ -198,6 +208,15 @@ export const buyStock = asyncHandler(async (req, res) => {
 export const sellStock = asyncHandler(async (req, res) => {
   const { symbol, quantity } = req.body;
   const userId = req.userId;
+
+  // Block trades when market is closed
+  if (!isMarketOpen()) {
+    const phase = getMarketPhase();
+    return res.status(400).json({
+      success: false,
+      message: `Market is currently ${phase}. Trading is only allowed during market hours (9:15 AM - 3:30 PM IST).`,
+    });
+  }
 
   // Validate quantity
   if (!quantity || quantity < 1) {

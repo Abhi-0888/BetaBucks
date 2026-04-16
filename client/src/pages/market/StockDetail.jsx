@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from 'react-query';
-import { createChart, ColorType, CrosshairMode } from 'lightweight-charts';
+import { createChart, ColorType, CrosshairMode, CandlestickSeries, LineSeries, HistogramSeries } from 'lightweight-charts';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Activity, BarChart3, DollarSign,
   Clock, Target, Package, Wallet, Percent, ChevronRight, Sparkles,
@@ -26,11 +26,13 @@ const TVChart = ({ symbol, range, interval }) => {
   const { data: histData } = useQuery(
     ['history', symbol, range, interval],
     () => marketAPI.getStockHistory(symbol, range, interval),
-    { staleTime: 30000 }
+    { staleTime: 30000, keepPreviousData: true, retry: 2 }
   );
 
   useEffect(() => {
-    if (!containerRef.current || !histData?.data?.length) return;
+    // histData = { success, data: { symbol, range, data: [...candles] } }
+    const candles = histData?.data?.data || histData?.data || [];
+    if (!containerRef.current || !candles.length) return;
 
     // Cleanup old chart
     if (chartRef.current) {
@@ -70,10 +72,18 @@ const TVChart = ({ symbol, range, interval }) => {
 
     chartRef.current = chart;
 
-    const candles = histData.data;
+    // Normalize and sort candles — lightweight-charts requires sorted, unique timestamps
+    const toUnix = (c) => c.time || Math.floor(new Date(c.timestamp).getTime() / 1000);
+    const seen = new Set();
+    const sortedCandles = candles
+      .map(c => ({ ...c, _time: toUnix(c) }))
+      .filter(c => c._time > 0 && c.close > 0 && !seen.has(c._time) && seen.add(c._time))
+      .sort((a, b) => a._time - b._time);
 
-    // Main candlestick series
-    const candleSeries = chart.addCandlestickSeries({
+    if (sortedCandles.length === 0) return;
+
+    // Main candlestick series (lightweight-charts v5 API)
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#22c55e',
       downColor: '#ef4444',
       borderUpColor: '#22c55e',
@@ -82,39 +92,36 @@ const TVChart = ({ symbol, range, interval }) => {
       wickDownColor: '#ef444480',
     });
 
-    const candleData = candles.map(c => ({
-      time: c.time || Math.floor(new Date(c.timestamp).getTime() / 1000),
+    const candleData = sortedCandles.map(c => ({
+      time: c._time,
       open: c.open, high: c.high, low: c.low, close: c.close,
     }));
     candleSeries.setData(candleData);
 
     // VWAP overlay line
-    if (candles[0]?.vwap) {
-      const vwapSeries = chart.addLineSeries({
+    const vwapCandles = sortedCandles.filter(c => c.vwap);
+    if (vwapCandles.length > 0) {
+      const vwapSeries = chart.addSeries(LineSeries, {
         color: '#ff993380',
         lineWidth: 1,
         lineStyle: 2,
         priceLineVisible: false,
         lastValueVisible: false,
       });
-      const vwapData = candles.filter(c => c.vwap).map(c => ({
-        time: c.time || Math.floor(new Date(c.timestamp).getTime() / 1000),
-        value: c.vwap,
-      }));
-      vwapSeries.setData(vwapData);
+      vwapSeries.setData(vwapCandles.map(c => ({ time: c._time, value: c.vwap })));
     }
 
     // Volume histogram
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
     });
     chart.priceScale('volume').applyOptions({
       scaleMargins: { top: 0.85, bottom: 0 },
     });
-    const volumeData = candles.map(c => ({
-      time: c.time || Math.floor(new Date(c.timestamp).getTime() / 1000),
-      value: c.volume,
+    const volumeData = sortedCandles.map(c => ({
+      time: c._time,
+      value: c.volume || 0,
       color: c.close >= c.open ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)',
     }));
     volumeSeries.setData(volumeData);
@@ -233,49 +240,61 @@ const QuickTradePanel = ({ stock, currentPrice, userHolding, balance }) => {
 // MarketDepth Component — Bid/Ask Table
 // ============================================================
 const MarketDepthPanel = ({ depth }) => {
-  if (!depth || !depth.bids?.length) return null;
-  const maxQty = Math.max(
-    ...depth.bids.map(b => b.qty),
-    ...depth.asks.map(a => a.qty),
-    1
-  );
+  const isClosed = !depth || depth.closed || !depth.bids?.length;
 
   return (
     <div className="card-vyuha">
       <div className="flex items-center gap-2 mb-3">
         <Layers className="w-4 h-4 text-saffron" />
         <h4 className="text-sm font-semibold text-white">Market Depth</h4>
+        {isClosed && (
+          <span className="ml-auto text-[10px] font-medium bg-dark-700 text-dark-400 px-2 py-0.5 rounded-full">CLOSED</span>
+        )}
       </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {/* Bids */}
-        <div>
-          <div className="flex justify-between text-dark-500 mb-1 px-1">
-            <span>Bid</span><span>Qty</span>
-          </div>
-          {depth.bids.map((b, i) => (
-            <div key={i} className="relative flex justify-between px-1 py-0.5 rounded">
-              <div className="absolute inset-0 bg-profit/10 rounded" style={{ width: `${(b.qty / maxQty) * 100}%` }} />
-              <span className="relative text-profit font-mono">{formatINR(b.price)}</span>
-              <span className="relative text-dark-400 font-mono">{formatNumber(b.qty)}</span>
-            </div>
-          ))}
-          <div className="text-profit text-xs mt-1 px-1 font-semibold">Total: {formatNumber(depth.totalBuyQty)}</div>
+      {isClosed ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Clock className="w-8 h-8 text-dark-600 mb-2" />
+          <p className="text-dark-400 text-sm font-medium">Market is closed</p>
+          <p className="text-dark-600 text-xs mt-1">Depth data available during market hours (9:15 AM – 3:30 PM IST)</p>
         </div>
-        {/* Asks */}
-        <div>
-          <div className="flex justify-between text-dark-500 mb-1 px-1">
-            <span>Ask</span><span>Qty</span>
-          </div>
-          {depth.asks.map((a, i) => (
-            <div key={i} className="relative flex justify-between px-1 py-0.5 rounded">
-              <div className="absolute inset-0 right-0 bg-loss/10 rounded" style={{ width: `${(a.qty / maxQty) * 100}%`, marginLeft: 'auto' }} />
-              <span className="relative text-loss font-mono">{formatINR(a.price)}</span>
-              <span className="relative text-dark-400 font-mono">{formatNumber(a.qty)}</span>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Bids */}
+          <div>
+            <div className="flex justify-between text-dark-500 mb-1 px-1">
+              <span>Bid</span><span>Qty</span>
             </div>
-          ))}
-          <div className="text-loss text-xs mt-1 px-1 font-semibold">Total: {formatNumber(depth.totalSellQty)}</div>
+            {depth.bids.map((b, i) => {
+              const maxQty = Math.max(...depth.bids.map(x => x.qty), ...depth.asks.map(x => x.qty), 1);
+              return (
+                <div key={i} className="relative flex justify-between px-1 py-0.5 rounded">
+                  <div className="absolute inset-0 bg-profit/10 rounded" style={{ width: `${(b.qty / maxQty) * 100}%` }} />
+                  <span className="relative text-profit font-mono">{formatINR(b.price)}</span>
+                  <span className="relative text-dark-400 font-mono">{formatNumber(b.qty)}</span>
+                </div>
+              );
+            })}
+            <div className="text-profit text-xs mt-1 px-1 font-semibold">Total: {formatNumber(depth.totalBuyQty)}</div>
+          </div>
+          {/* Asks */}
+          <div>
+            <div className="flex justify-between text-dark-500 mb-1 px-1">
+              <span>Ask</span><span>Qty</span>
+            </div>
+            {depth.asks.map((a, i) => {
+              const maxQty = Math.max(...depth.bids.map(x => x.qty), ...depth.asks.map(x => x.qty), 1);
+              return (
+                <div key={i} className="relative flex justify-between px-1 py-0.5 rounded">
+                  <div className="absolute inset-0 right-0 bg-loss/10 rounded" style={{ width: `${(a.qty / maxQty) * 100}%`, marginLeft: 'auto' }} />
+                  <span className="relative text-loss font-mono">{formatINR(a.price)}</span>
+                  <span className="relative text-dark-400 font-mono">{formatNumber(a.qty)}</span>
+                </div>
+              );
+            })}
+            <div className="text-loss text-xs mt-1 px-1 font-semibold">Total: {formatNumber(depth.totalSellQty)}</div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -307,7 +326,7 @@ const StockDetail = () => {
   const { data: stockData, isLoading } = useQuery(
     ['stock', symbol],
     () => marketAPI.getStockDetail(symbol),
-    { staleTime: 10000, refetchInterval: 15000 }
+    { staleTime: 10000, refetchInterval: 15000, keepPreviousData: true, retry: 2 }
   );
 
   const { price, changePercent, flash } = useLivePrice(symbol);
@@ -407,13 +426,22 @@ const StockDetail = () => {
 
         {/* Buy/Sell */}
         <div className="flex gap-3 mt-5">
-          <button onClick={() => setIsBuyModalOpen(true)} className="flex-1 btn-success py-3 text-sm">
-            <TrendingUp className="w-4 h-4 mr-1" /> Buy
-          </button>
-          <button onClick={() => setIsSellModalOpen(true)} disabled={!userHolding || userHolding.quantity === 0}
-            className="flex-1 btn-danger py-3 text-sm">
-            <TrendingDown className="w-4 h-4 mr-1" /> Sell {userHolding ? `(${userHolding.quantity})` : ''}
-          </button>
+          {stock.tradingEnabled === false ? (
+            <div className="flex-1 text-center py-3 text-sm rounded-lg bg-dark-800 border border-dark-700 text-dark-400">
+              <Clock className="w-4 h-4 inline mr-1.5" />
+              Market Closed — Trading resumes at 9:15 AM IST
+            </div>
+          ) : (
+            <>
+              <button onClick={() => setIsBuyModalOpen(true)} className="flex-1 btn-success py-3 text-sm">
+                <TrendingUp className="w-4 h-4 mr-1" /> Buy
+              </button>
+              <button onClick={() => setIsSellModalOpen(true)} disabled={!userHolding || userHolding.quantity === 0}
+                className="flex-1 btn-danger py-3 text-sm">
+                <TrendingDown className="w-4 h-4 mr-1" /> Sell {userHolding ? `(${userHolding.quantity})` : ''}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -443,8 +471,10 @@ const StockDetail = () => {
         </div>
         <TVChart symbol={symbol} range={chartRange} interval={chartInterval} />
 
-        {/* Quick Trade Panel — trade from chart */}
-        <QuickTradePanel stock={stock} currentPrice={currentPrice} userHolding={userHolding} balance={summary?.cashBalance || 0} />
+        {/* Quick Trade Panel — trade from chart (only during market hours) */}
+        {stock.tradingEnabled !== false && (
+          <QuickTradePanel stock={stock} currentPrice={currentPrice} userHolding={userHolding} balance={summary?.cashBalance || 0} />
+        )}
       </div>
 
       {/* Data Grid */}

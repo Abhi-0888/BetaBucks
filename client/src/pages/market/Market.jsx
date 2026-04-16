@@ -50,20 +50,27 @@ const SECTOR_FILTERS = [
 
 const Market = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
   const [sortBy, setSortBy] = useState('changePercent');
 
+  // Debounce search input — wait 400ms after typing stops
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Fetch stocks
   const { data: stocksData, isLoading, error } = useQuery(
-    ['stocks', selectedSector, searchQuery, sortBy],
+    ['stocks', selectedSector, debouncedSearch, sortBy],
     () => marketAPI.getStocks({
       sector: selectedSector === 'all' ? undefined : selectedSector,
-      search: searchQuery || undefined,
+      search: debouncedSearch || undefined,
       sortBy,
       order: 'desc',
       limit: 50
     }),
-    { refetchInterval: 30000 }
+    { refetchInterval: 30000, keepPreviousData: true }
   );
 
   const stocks = stocksData?.data || [];

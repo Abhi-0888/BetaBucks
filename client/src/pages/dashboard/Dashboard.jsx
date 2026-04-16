@@ -108,14 +108,16 @@ const PortfolioSummaryCards = ({ stats }) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {cards.map((c, i) => (
-        <div key={i} className="card-hover p-3 animate-slideUp" style={{ animationDelay: `${i * 50}ms` }}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-dark-500 text-xs">{c.title}</span>
-            <c.icon className="w-4 h-4 text-saffron/60" />
+        <div key={i} className="card-hover p-5 animate-slideUp" style={{ animationDelay: `${i * 50}ms` }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-2 rounded-lg bg-dark-800/80">
+              <c.icon className="w-4 h-4 text-saffron" />
+            </div>
+            <span className="text-dark-400 text-sm font-medium">{c.title}</span>
           </div>
-          <div className={`text-lg font-bold font-mono ${
+          <div className={`text-2xl font-bold font-mono whitespace-nowrap ${
             c.trend !== undefined ? (c.trend >= 0 ? 'text-profit' : 'text-loss') : 'text-white'
           }`}>{c.value}</div>
         </div>
@@ -386,7 +388,7 @@ const Dashboard = () => {
       <MarketTicker stocks={niftyStocks} />
 
       {/* Index Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <IndexCard
           name="NIFTY 50"
           value={nifty50Index.value}
@@ -401,10 +403,10 @@ const Dashboard = () => {
           change={bankNifty.change}
           changePercent={bankNifty.changePercent}
         />
-        <div className="sm:col-span-2 lg:col-span-1">
-          <PortfolioSummaryCards stats={summary} />
-        </div>
       </div>
+
+      {/* Portfolio Summary — full width row */}
+      <PortfolioSummaryCards stats={summary} />
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

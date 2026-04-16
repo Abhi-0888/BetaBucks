@@ -15,27 +15,28 @@ const CACHE_TTL = 30000; // 30 seconds
 // ============================================================
 // STOCK UNIVERSE — Realistic NSE data (Nifty 50 subset)
 // ============================================================
+// Base prices are fallback only — real prices come from Yahoo Finance API
 const STOCK_DATA = {
-  'RELIANCE.NS': { basePrice: 2950, name: 'Reliance Industries', marketCap: 1995000, volatility: 0.015, sector: 'Energy', pe: 22, pb: 2.1, avgVol: 12000000 },
-  'TCS.NS': { basePrice: 4250, name: 'Tata Consultancy Services', marketCap: 1558000, volatility: 0.012, sector: 'IT', pe: 28, pb: 5.2, avgVol: 3500000 },
-  'INFY.NS': { basePrice: 1480, name: 'Infosys Ltd', marketCap: 612000, volatility: 0.013, sector: 'IT', pe: 25, pb: 3.8, avgVol: 8000000 },
-  'HDFCBANK.NS': { basePrice: 1520, name: 'HDFC Bank Ltd', marketCap: 1150000, volatility: 0.014, sector: 'Banking', pe: 18, pb: 2.9, avgVol: 9000000 },
-  'ICICIBANK.NS': { basePrice: 1080, name: 'ICICI Bank Ltd', marketCap: 760000, volatility: 0.016, sector: 'Banking', pe: 16, pb: 2.4, avgVol: 11000000 },
-  'WIPRO.NS': { basePrice: 465, name: 'Wipro Ltd', marketCap: 243000, volatility: 0.014, sector: 'IT', pe: 19, pb: 2.8, avgVol: 7000000 },
-  'SBIN.NS': { basePrice: 890, name: 'State Bank of India', marketCap: 794000, volatility: 0.018, sector: 'Banking', pe: 12, pb: 1.6, avgVol: 18000000 },
-  'TATAPOWER.NS': { basePrice: 410, name: 'Tata Power Company Ltd', marketCap: 131000, volatility: 0.025, sector: 'Utilities', pe: 35, pb: 2.2, avgVol: 22000000 },
-  'TATASTEEL.NS': { basePrice: 168, name: 'Tata Steel Ltd', marketCap: 209000, volatility: 0.022, sector: 'Metals', pe: 14, pb: 1.2, avgVol: 25000000 },
-  'HINDUNILVR.NS': { basePrice: 2320, name: 'Hindustan Unilever Ltd', marketCap: 543000, volatility: 0.010, sector: 'FMCG', pe: 45, pb: 11.2, avgVol: 2000000 },
-  'BAJFINANCE.NS': { basePrice: 7020, name: 'Bajaj Finance Ltd', marketCap: 439000, volatility: 0.020, sector: 'Finance', pe: 32, pb: 6.8, avgVol: 4000000 },
-  'ADANIENT.NS': { basePrice: 3340, name: 'Adani Enterprises Ltd', marketCap: 380000, volatility: 0.030, sector: 'Conglomerate', pe: 42, pb: 3.5, avgVol: 5000000 },
-  'MARUTI.NS': { basePrice: 12750, name: 'Maruti Suzuki India Ltd', marketCap: 382000, volatility: 0.015, sector: 'Auto', pe: 24, pb: 4.1, avgVol: 1200000 },
-  'SUNPHARMA.NS': { basePrice: 1780, name: 'Sun Pharmaceutical Ltd', marketCap: 426000, volatility: 0.014, sector: 'Pharma', pe: 28, pb: 3.2, avgVol: 4500000 },
-  'ONGC.NS': { basePrice: 278, name: 'ONGC Ltd', marketCap: 350000, volatility: 0.018, sector: 'Energy', pe: 8, pb: 0.9, avgVol: 15000000 },
-  'POWERGRID.NS': { basePrice: 335, name: 'Power Grid Corporation Ltd', marketCap: 312000, volatility: 0.012, sector: 'Utilities', pe: 15, pb: 2.1, avgVol: 8000000 },
-  'COALINDIA.NS': { basePrice: 460, name: 'Coal India Ltd', marketCap: 283000, volatility: 0.016, sector: 'Mining', pe: 9, pb: 2.8, avgVol: 10000000 },
-  'NTPC.NS': { basePrice: 390, name: 'NTPC Ltd', marketCap: 375000, volatility: 0.013, sector: 'Utilities', pe: 17, pb: 1.4, avgVol: 12000000 },
-  'LT.NS': { basePrice: 3680, name: 'Larsen & Toubro Ltd', marketCap: 507000, volatility: 0.017, sector: 'Infrastructure', pe: 31, pb: 4.2, avgVol: 3000000 },
-  'AXISBANK.NS': { basePrice: 1120, name: 'Axis Bank Ltd', marketCap: 345000, volatility: 0.018, sector: 'Banking', pe: 14, pb: 2.1, avgVol: 10000000 },
+  'RELIANCE.NS': { basePrice: 1340, name: 'Reliance Industries', marketCap: 1820000, volatility: 0.015, sector: 'Energy', pe: 22, pb: 2.1, avgVol: 12000000 },
+  'TCS.NS': { basePrice: 3500, name: 'Tata Consultancy Services', marketCap: 1270000, volatility: 0.012, sector: 'IT', pe: 28, pb: 5.2, avgVol: 3500000 },
+  'INFY.NS': { basePrice: 1520, name: 'Infosys Ltd', marketCap: 635000, volatility: 0.013, sector: 'IT', pe: 25, pb: 3.8, avgVol: 8000000 },
+  'HDFCBANK.NS': { basePrice: 1890, name: 'HDFC Bank Ltd', marketCap: 1440000, volatility: 0.014, sector: 'Banking', pe: 18, pb: 2.9, avgVol: 9000000 },
+  'ICICIBANK.NS': { basePrice: 1350, name: 'ICICI Bank Ltd', marketCap: 950000, volatility: 0.016, sector: 'Banking', pe: 16, pb: 2.4, avgVol: 11000000 },
+  'WIPRO.NS': { basePrice: 245, name: 'Wipro Ltd', marketCap: 255000, volatility: 0.014, sector: 'IT', pe: 19, pb: 2.8, avgVol: 7000000 },
+  'SBIN.NS': { basePrice: 800, name: 'State Bank of India', marketCap: 715000, volatility: 0.018, sector: 'Banking', pe: 12, pb: 1.6, avgVol: 18000000 },
+  'TATAPOWER.NS': { basePrice: 390, name: 'Tata Power Company Ltd', marketCap: 125000, volatility: 0.025, sector: 'Utilities', pe: 35, pb: 2.2, avgVol: 22000000 },
+  'TATASTEEL.NS': { basePrice: 150, name: 'Tata Steel Ltd', marketCap: 188000, volatility: 0.022, sector: 'Metals', pe: 14, pb: 1.2, avgVol: 25000000 },
+  'HINDUNILVR.NS': { basePrice: 2300, name: 'Hindustan Unilever Ltd', marketCap: 540000, volatility: 0.010, sector: 'FMCG', pe: 45, pb: 11.2, avgVol: 2000000 },
+  'BAJFINANCE.NS': { basePrice: 8800, name: 'Bajaj Finance Ltd', marketCap: 540000, volatility: 0.020, sector: 'Finance', pe: 32, pb: 6.8, avgVol: 4000000 },
+  'ADANIENT.NS': { basePrice: 2350, name: 'Adani Enterprises Ltd', marketCap: 268000, volatility: 0.030, sector: 'Conglomerate', pe: 42, pb: 3.5, avgVol: 5000000 },
+  'MARUTI.NS': { basePrice: 12200, name: 'Maruti Suzuki India Ltd', marketCap: 380000, volatility: 0.015, sector: 'Auto', pe: 24, pb: 4.1, avgVol: 1200000 },
+  'SUNPHARMA.NS': { basePrice: 1750, name: 'Sun Pharmaceutical Ltd', marketCap: 420000, volatility: 0.014, sector: 'Pharma', pe: 28, pb: 3.2, avgVol: 4500000 },
+  'ONGC.NS': { basePrice: 250, name: 'ONGC Ltd', marketCap: 315000, volatility: 0.018, sector: 'Energy', pe: 8, pb: 0.9, avgVol: 15000000 },
+  'POWERGRID.NS': { basePrice: 310, name: 'Power Grid Corporation Ltd', marketCap: 288000, volatility: 0.012, sector: 'Utilities', pe: 15, pb: 2.1, avgVol: 8000000 },
+  'COALINDIA.NS': { basePrice: 400, name: 'Coal India Ltd', marketCap: 247000, volatility: 0.016, sector: 'Mining', pe: 9, pb: 2.8, avgVol: 10000000 },
+  'NTPC.NS': { basePrice: 360, name: 'NTPC Ltd', marketCap: 350000, volatility: 0.013, sector: 'Utilities', pe: 17, pb: 1.4, avgVol: 12000000 },
+  'LT.NS': { basePrice: 3400, name: 'Larsen & Toubro Ltd', marketCap: 470000, volatility: 0.017, sector: 'Infrastructure', pe: 31, pb: 4.2, avgVol: 3000000 },
+  'AXISBANK.NS': { basePrice: 1170, name: 'Axis Bank Ltd', marketCap: 363000, volatility: 0.018, sector: 'Banking', pe: 14, pb: 2.1, avgVol: 10000000 },
 };
 
 // ============================================================
@@ -169,17 +170,26 @@ const updatePrice = (symbol) => {
     }
   }
 
-  // ---- Market Depth (simulated Top 5 Bid/Ask) ----
-  const spread = newPrice * 0.001;
+  // ---- Market Depth (deterministic per symbol) ----
+  const depthSpread = newPrice * 0.001;
+  const depthHash = symbol.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+  const depthQty = (lvl, side) => {
+    const s = Math.abs(depthHash * 7919 + lvl * 1013 + side * 3571);
+    return Math.floor(((s % 5000) + 500) * (5 - lvl));
+  };
+  const depthOrd = (lvl, side) => {
+    const s = Math.abs(depthHash * 4217 + lvl * 839 + side * 2377);
+    return (s % 50) + 5;
+  };
   const bids = Array.from({ length: 5 }, (_, i) => ({
-    price: Math.round((newPrice - spread * (i + 1)) * 100) / 100,
-    qty: Math.floor(Math.random() * 5000 + 500) * (5 - i),
-    orders: Math.floor(Math.random() * 50 + 5),
+    price: Math.round((newPrice - depthSpread * (i + 1)) * 100) / 100,
+    qty: depthQty(i, 0),
+    orders: depthOrd(i, 0),
   }));
   const asks = Array.from({ length: 5 }, (_, i) => ({
-    price: Math.round((newPrice + spread * (i + 1)) * 100) / 100,
-    qty: Math.floor(Math.random() * 5000 + 500) * (5 - i),
-    orders: Math.floor(Math.random() * 50 + 5),
+    price: Math.round((newPrice + depthSpread * (i + 1)) * 100) / 100,
+    qty: depthQty(i, 1),
+    orders: depthOrd(i, 1),
   }));
   const totalBuyQty = bids.reduce((s, b) => s + b.qty, 0);
   const totalSellQty = asks.reduce((s, a) => s + a.qty, 0);
@@ -256,6 +266,12 @@ const generateStockData = (symbol) => {
 
 export const fetchSingleQuote = async (symbol) => {
   try {
+    // Check cache first
+    const cached = priceCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data;
+    }
+    
     for (const baseUrl of YAHOO_BASE_URLS) {
       try {
         const url = `${baseUrl}/v8/finance/chart/${symbol}?interval=1d`;
@@ -267,26 +283,127 @@ export const fetchSingleQuote = async (symbol) => {
         if (result) {
           const meta = result.meta;
           const quote = result.indicators?.quote?.[0];
-          const close = quote?.close?.filter(c => c !== null);
-          const currentPrice = close?.[close.length - 1] || meta.regularMarketPrice || 0;
+          const closes = quote?.close || [];
+          const opens = quote?.open || [];
+          const highs = quote?.high || [];
+          const lows = quote?.low || [];
+          const volumes = quote?.volume || [];
+          
+          // Get the latest valid close price
+          const validCloses = closes.filter(c => c !== null && c !== undefined);
+          const currentPrice = meta.regularMarketPrice || validCloses[validCloses.length - 1] || 0;
+          
           if (currentPrice > 0) {
             currentPrices.set(symbol, currentPrice);
+            
+            // Yahoo uses chartPreviousClose, not previousClose
+            const previousClose = meta.chartPreviousClose || meta.previousClose || currentPrice;
+            const changeAmount = currentPrice - previousClose;
+            const changePercent = previousClose > 0 ? (changeAmount / previousClose) * 100 : 0;
+            
+            // Extract open price from first candle or meta
+            const openPrice = opens.find(o => o !== null) || meta.regularMarketOpen || previousClose;
+            
+            // Get stock info from our universe or create from Yahoo data
+            const stockInfo = STOCK_DATA[symbol] || {
+              name: meta.shortName || meta.longName || symbol,
+              sector: 'Unknown',
+              volatility: 0.015,
+              avgVol: meta.regularMarketVolume || 1000000,
+              marketCap: 0
+            };
+            
+            // Build deterministic market depth — seeded by symbol so values are stable
+            const spread = currentPrice * 0.0005; // ~0.05% spread per level
+            const avgVol = meta.regularMarketVolume || stockInfo.avgVol || 1000000;
+            // Simple hash of symbol for deterministic "random" quantities
+            const symHash = symbol.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+            const seededQty = (level, side) => {
+              const seed = Math.abs(symHash * 7919 + level * 1013 + side * 3571);
+              const factor = ((seed % 100) + 50) / 100; // 0.50 – 1.49
+              return Math.floor((avgVol / 100) * factor);
+            };
+            const seededOrders = (level, side) => {
+              const seed = Math.abs(symHash * 4217 + level * 839 + side * 2377);
+              return (seed % 30) + 5; // 5 – 34
+            };
+            const marketDepth = {
+              bids: Array.from({ length: 5 }, (_, i) => ({
+                price: Math.round((currentPrice - spread * (i + 1)) * 100) / 100,
+                qty: seededQty(i, 0),
+                orders: seededOrders(i, 0),
+              })),
+              asks: Array.from({ length: 5 }, (_, i) => ({
+                price: Math.round((currentPrice + spread * (i + 1)) * 100) / 100,
+                qty: seededQty(i, 1),
+                orders: seededOrders(i, 1),
+              })),
+              totalBuyQty: 0, totalSellQty: 0
+            };
+            marketDepth.totalBuyQty = marketDepth.bids.reduce((s, b) => s + b.qty, 0);
+            marketDepth.totalSellQty = marketDepth.asks.reduce((s, a) => s + a.qty, 0);
+            
+            // Circuit limits (±20% of previous close)
+            const upperCircuit = Math.round(previousClose * 1.20 * 100) / 100;
+            const lowerCircuit = Math.round(previousClose * 0.80 * 100) / 100;
+            
+            // Calculate VWAP from intraday data
+            let vwap = currentPrice;
+            if (validCloses.length > 0 && volumes.length > 0) {
+              let vwapNum = 0, vwapDen = 0;
+              for (let i = 0; i < validCloses.length; i++) {
+                const p = (highs[i] || validCloses[i]) + (lows[i] || validCloses[i]) + (validCloses[i]);
+                const typical = p / 3;
+                const v = volumes[i] || 0;
+                vwapNum += typical * v;
+                vwapDen += v;
+              }
+              if (vwapDen > 0) vwap = Math.round((vwapNum / vwapDen) * 100) / 100;
+            }
+            
             const data = {
-              symbol, shortName: meta.shortName || symbol,
+              symbol,
+              shortName: meta.shortName || meta.longName || stockInfo.name || symbol,
+              exchange: meta.exchangeName || 'NSE',
+              sector: stockInfo.sector,
               currentPrice: Math.round(currentPrice * 100) / 100,
-              previousClose: meta.previousClose || currentPrice,
-              dayHigh: meta.regularMarketDayHigh || currentPrice * 1.01,
-              dayLow: meta.regularMarketDayLow || currentPrice * 0.99,
-              volume: meta.regularMarketVolume || 0,
-              marketCap: meta.marketCap || null,
-              currency: meta.currency || 'INR',
-              lastUpdated: new Date(), isMock: false, dataSource: 'yahoo',
+              previousClose: Math.round(previousClose * 100) / 100,
+              openPrice: Math.round(openPrice * 100) / 100,
+              dayHigh: meta.regularMarketDayHigh || Math.max(...highs.filter(h => h)) || currentPrice,
+              dayLow: meta.regularMarketDayLow || Math.min(...lows.filter(l => l)) || currentPrice,
+              officialClose: Math.round(previousClose * 100) / 100,
+              volume: meta.regularMarketVolume || volumes.reduce((a, b) => a + (b || 0), 0) || 0,
+              turnover: Math.round((meta.regularMarketVolume || 0) * currentPrice),
+              avgDailyVolume: stockInfo.avgVol || meta.regularMarketVolume || 1000000,
+              vwap,
+              changeAmount: Math.round(changeAmount * 100) / 100,
+              changePercent: Math.round(changePercent * 100) / 100,
+              marketCap: stockInfo.marketCap ? stockInfo.marketCap * 1000000 : 0,
+              upperCircuit,
+              lowerCircuit,
+              fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh || currentPrice * 1.3,
+              fiftyTwoWeekLow: meta.fiftyTwoWeekLow || currentPrice * 0.7,
+              peRatio: stockInfo.pe || 15,
+              pbRatio: stockInfo.pb || 2,
+              dividendYield: stockInfo.divYield || parseFloat((Math.random() * 2).toFixed(2)),
+              ema50: currentPrice,
+              ema200: currentPrice,
+              marketDepth,
+              intradayCandles: [],
+              fiveMinCandles: [],
+              sessionDate: getISTDateString(),
+              lastUpdated: new Date(),
+              isMock: false,
+              dataSource: 'yahoo'
             };
             priceCache.set(symbol, { data, timestamp: Date.now() });
             return data;
           }
         }
-      } catch (err) { continue; }
+      } catch (err) {
+        console.error(`Yahoo API error for ${symbol} (${baseUrl}):`, err.message);
+        continue;
+      }
     }
     return generateStockData(symbol);
   } catch (error) {
@@ -296,20 +413,26 @@ export const fetchSingleQuote = async (symbol) => {
 
 export const fetchBatchQuotes = async (symbols) => {
   if (!symbols || symbols.length === 0) return [];
-  const results = symbols.map(symbol => generateStockData(symbol));
-  // Background Yahoo sync (non-blocking)
-  symbols.forEach(async (symbol) => {
+  
+  // Fetch real data from Yahoo Finance for all symbols
+  const results = [];
+  let yahooCount = 0, simCount = 0;
+  for (const symbol of symbols) {
     try {
-      for (const baseUrl of YAHOO_BASE_URLS) {
-        const url = `${baseUrl}/v8/finance/chart/${symbol}?interval=1d`;
-        const resp = await axios.get(url, { timeout: 3000, headers: { 'User-Agent': 'Mozilla/5.0' } });
-        const r = resp.data.chart?.result?.[0];
-        if (r?.meta?.regularMarketPrice) currentPrices.set(symbol, r.meta.regularMarketPrice);
-        break;
-      } 
-    } catch (err) { /* ignore */ }
-  });
-  return results.filter(r => r !== null);
+      const data = await fetchSingleQuote(symbol);
+      if (data) {
+        results.push(data);
+        if (data.dataSource === 'yahoo') yahooCount++;
+        else simCount++;
+      }
+    } catch (err) {
+      console.error(`Failed to fetch ${symbol}:`, err.message);
+    }
+  }
+  if (results.length > 0) {
+    console.log(`📊 Batch: ${results.length} stocks (${yahooCount} Yahoo, ${simCount} simulated)`);
+  }
+  return results;
 };
 
 // Generate mock historical data — enhanced for TradingView

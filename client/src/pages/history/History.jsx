@@ -1,14 +1,20 @@
 import { useState } from 'react';
-import { useQuery } from 'react-query';
-import { History as HistoryIcon, Download, ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { useQuery, useQueryClient } from 'react-query';
+import { History as HistoryIcon, Download, ArrowUpDown, TrendingUp, TrendingDown, XCircle, BadgeDollarSign } from 'lucide-react';
 import { tradeAPI } from '../../api/trade.api.js';
+import { marketAPI } from '../../api/market.api.js';
+import { usePortfolio } from '../../hooks/usePortfolio.js';
 import { formatINR, formatDateTime, getPnLColor } from '../../utils/formatters.js';
+import toast from 'react-hot-toast';
 
 const History = () => {
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState('all');
+  const [sellingTrade, setSellingTrade] = useState(null);
+  const queryClient = useQueryClient();
+  const { holdings } = usePortfolio();
 
-  const { data, isLoading } = useQuery(
+  const { data, isLoading, refetch } = useQuery(
     ['trade-history', page, filter],
     () => tradeAPI.getTradeHistory({ 
       page, 
@@ -20,6 +26,40 @@ const History = () => {
 
   const transactions = data?.data || [];
   const pagination = data?.pagination || {};
+
+  // Get holdings map for quick lookup
+  const holdingsMap = holdings?.holdings?.reduce((acc, h) => {
+    acc[h.symbol] = h;
+    return acc;
+  }, {}) || {};
+
+  const handleQuickExit = async (tx) => {
+    const holding = holdingsMap[tx.symbol];
+    if (!holding || holding.quantity <= 0) {
+      toast.error('No shares to sell');
+      return;
+    }
+    
+    setSellingTrade(tx._id);
+    try {
+      // Get current price
+      const stockData = await marketAPI.getStockDetail(tx.symbol);
+      const currentPrice = stockData?.data?.currentPrice || tx.pricePerShare;
+      
+      // Execute sell
+      const res = await tradeAPI.sellStock(tx.symbol, holding.quantity);
+      if (res.success) {
+        toast.success(`Exited ${tx.symbol.replace('.NS', '')}: Sold ${holding.quantity} shares @ ${formatINR(currentPrice)}`);
+        queryClient.invalidateQueries('portfolio');
+        queryClient.invalidateQueries('trade-history');
+        refetch();
+      }
+    } catch (err) {
+      toast.error(err.message || 'Exit failed');
+    } finally {
+      setSellingTrade(null);
+    }
+  };
 
   const handleExport = () => {
     // Simple CSV export
@@ -107,6 +147,7 @@ const History = () => {
                     <th className="px-4 py-3 text-right text-xs font-medium text-dark-500 uppercase">Price</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-dark-500 uppercase">Total</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-dark-500 uppercase">P&L</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-dark-500 uppercase">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -141,6 +182,23 @@ const History = () => {
                           </span>
                         ) : (
                           <span className="text-dark-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {tx.type === 'BUY' && holdingsMap[tx.symbol]?.quantity > 0 && (
+                          <button
+                            onClick={() => handleQuickExit(tx)}
+                            disabled={sellingTrade === tx._id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-loss/10 hover:bg-loss/20 text-loss rounded-lg text-xs font-semibold transition-colors"
+                            title={`Exit position: ${holdingsMap[tx.symbol]?.quantity} shares available`}
+                          >
+                            {sellingTrade === tx._id ? (
+                              <div className="w-3 h-3 border border-loss/30 border-t-loss rounded-full animate-spin" />
+                            ) : (
+                              <BadgeDollarSign className="w-3 h-3" />
+                            )}
+                            Exit ({holdingsMap[tx.symbol]?.quantity})
+                          </button>
                         )}
                       </td>
                     </tr>

@@ -120,9 +120,24 @@ export const getStockDetail = asyncHandler(async (req, res) => {
     });
   }
 
+  // Check market status for depth and trading availability
+  const { isMarketOpen, getMarketPhase } = await import('../services/marketStatus.service.js');
+  const marketOpen = isMarketOpen();
+  const phase = getMarketPhase();
+
+  // Clear market depth when market is closed
+  const emptyDepth = {
+    bids: [], asks: [],
+    totalBuyQty: 0, totalSellQty: 0,
+    closed: true,
+  };
+
   // Enrich response
   const enrichedStock = {
     ...stock,
+    marketDepth: marketOpen ? stock.marketDepth : emptyDepth,
+    tradingEnabled: marketOpen,
+    marketPhase: phase,
     trend: stock.changePercent >= 0 ? 'up' : 'down',
     formattedChange: `${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent?.toFixed(2) || '0.00'}%`,
     formattedChangeAmount: `${stock.changeAmount >= 0 ? '+' : ''}₹${stock.changeAmount?.toFixed(2) || '0.00'}`,
@@ -252,10 +267,86 @@ export const getMarketStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: status });
 });
 
-// Get latest market snapshot (for post-market display)
+// ---- Index data cache ----
+let indexCache = { nifty: null, bank: null, ts: 0 };
+const INDEX_CACHE_TTL = 30000; // 30s
+
+async function fetchRealIndex(symbol) {
+  const axios = (await import('axios')).default;
+  const urls = ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com'];
+  for (const base of urls) {
+    try {
+      const { data } = await axios.get(`${base}/v8/finance/chart/${symbol}?interval=1d`, {
+        timeout: 6000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+      });
+      const meta = data.chart?.result?.[0]?.meta;
+      if (meta?.regularMarketPrice) {
+        const price = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose || price;
+        const change = Math.round((price - prevClose) * 100) / 100;
+        const changePct = prevClose > 0 ? Math.round(((price - prevClose) / prevClose) * 10000) / 100 : 0;
+        return { value: Math.round(price * 100) / 100, change, changePercent: changePct };
+      }
+    } catch (_) { continue; }
+  }
+  return null;
+}
+
+// Get latest market snapshot — fetch real NIFTY/BANKNIFTY from Yahoo
 export const getMarketSnapshot = asyncHandler(async (req, res) => {
-  const { getLatestSnapshot } = await import('../services/snapshot.service.js');
-  const snapshot = await getLatestSnapshot();
+  const stocks = await Stock.find({}).lean();
+
+  if (stocks.length === 0) {
+    return res.json({ success: true, data: null });
+  }
+
+  // Breadth from our stock universe
+  const advancers = stocks.filter(s => (s.changePercent || 0) > 0);
+  const decliners = stocks.filter(s => (s.changePercent || 0) < 0);
+  const unchanged = stocks.filter(s => !s.changePercent || s.changePercent === 0);
+
+  // Fetch real index values (with 30s cache)
+  const now = Date.now();
+  if (now - indexCache.ts > INDEX_CACHE_TTL) {
+    const [nifty, bank] = await Promise.all([
+      fetchRealIndex('^NSEI'),
+      fetchRealIndex('^NSEBANK'),
+    ]);
+    if (nifty) indexCache.nifty = nifty;
+    if (bank) indexCache.bank = bank;
+    indexCache.ts = now;
+  }
+
+  const nifty50 = indexCache.nifty || { value: 0, change: 0, changePercent: 0 };
+  const bankNifty = indexCache.bank || { value: 0, change: 0, changePercent: 0 };
+
+  const snapshot = {
+    indices: {
+      nifty50: {
+        ...nifty50,
+        advancers: advancers.length,
+        decliners: decliners.length,
+        unchanged: unchanged.length,
+      },
+      niftyBank: {
+        ...bankNifty,
+        stockCount: stocks.filter(s => s.sector === 'Banking' || s.sector === 'Finance').length,
+      },
+    },
+    breadth: {
+      advances: advancers.length,
+      declines: decliners.length,
+      unchanged: unchanged.length,
+      advanceDeclineRatio: decliners.length > 0
+        ? Math.round((advancers.length / decliners.length) * 100) / 100
+        : advancers.length,
+    },
+    totalVolume: stocks.reduce((sum, s) => sum + (s.volume || 0), 0),
+    totalTurnover: stocks.reduce((sum, s) => sum + (s.turnover || 0), 0),
+    stockCount: stocks.length,
+  };
+
   res.json({ success: true, data: snapshot });
 });
 

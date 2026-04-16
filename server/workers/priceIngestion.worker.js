@@ -40,6 +40,11 @@ const fetchAndUpdatePrices = async () => {
     // Broadcast market status to all clients
     if (io) io.emit('market_status', marketStatus);
 
+    // Skip fetching new prices when market is closed — serve last known data
+    if (marketStatus.isClosed && !marketStatus.isPostClose) {
+      return;
+    }
+
     const quotes = await fetchBatchQuotes(symbols);
     if (!quotes || quotes.length === 0) return;
 

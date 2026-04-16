@@ -85,33 +85,54 @@ export const captureMarketSnapshot = async () => {
         turnover: s.turnover, changePercent: s.changePercent,
       }));
 
-    // Calculate simulated index values
-    const avgPrice = stocks.reduce((sum, s) => sum + (s.currentPrice || 0), 0) / stocks.length;
-    const avgChange = stocks.reduce((sum, s) => sum + (s.changePercent || 0), 0) / stocks.length;
-    const niftyValue = Math.round(22500 + (avgChange * 100));
-    const bankNiftyValue = Math.round(48000 + (avgChange * 200));
+    // Calculate market cap weighted index values
+    const niftyStocks = stocks.filter(s => s.marketCap > 0);
+    const totalMarketCap = niftyStocks.reduce((sum, s) => sum + (s.marketCap || 0), 0);
+    
+    // NIFTY 50 - market cap weighted
+    const niftyValue = niftyStocks.length > 0 
+      ? niftyStocks.reduce((sum, s) => sum + (s.currentPrice || 0) * ((s.marketCap || 0) / totalMarketCap || 1), 0) 
+      : 0;
+    const niftyPrevClose = niftyStocks.length > 0
+      ? niftyStocks.reduce((sum, s) => sum + (s.previousClose || 0) * ((s.marketCap || 0) / totalMarketCap || 1), 0)
+      : 0;
+    const niftyChange = niftyValue - niftyPrevClose;
+    const niftyChangePercent = niftyPrevClose > 0 ? (niftyChange / niftyPrevClose) * 100 : 0;
+    
+    // Bank Nifty - banking sector stocks
+    const bankStocks = stocks.filter(s => s.sector === 'Banking' || s.sector === 'Finance');
+    const bankTotalCap = bankStocks.reduce((sum, s) => sum + (s.marketCap || 0), 0);
+    const bankValue = bankStocks.length > 0
+      ? bankStocks.reduce((sum, s) => sum + (s.currentPrice || 0) * ((s.marketCap || 0) / bankTotalCap || 1), 0)
+      : 0;
+    const bankPrevClose = bankStocks.length > 0
+      ? bankStocks.reduce((sum, s) => sum + (s.previousClose || 0) * ((s.marketCap || 0) / bankTotalCap || 1), 0)
+      : 0;
+    const bankChange = bankValue - bankPrevClose;
+    const bankChangePercent = bankPrevClose > 0 ? (bankChange / bankPrevClose) * 100 : 0;
 
     const snapshot = {
       sessionDate,
       capturedAt: new Date(),
       indices: {
         nifty50: {
-          value: niftyValue,
-          change: Math.round(avgChange * 100) / 100 * 100,
-          changePercent: Math.round(avgChange * 100) / 100,
+          value: Math.round(niftyValue * 10) / 10,
+          change: Math.round(niftyChange * 100) / 100,
+          changePercent: Math.round(niftyChangePercent * 100) / 100,
           advancers: advancers.length,
           decliners: decliners.length,
           unchanged: unchanged.length,
         },
         niftyBank: {
-          value: bankNiftyValue,
-          change: Math.round(avgChange * 1.2 * 100) / 100 * 200,
-          changePercent: Math.round(avgChange * 1.2 * 100) / 100,
+          value: Math.round(bankValue * 10) / 10,
+          change: Math.round(bankChange * 100) / 100,
+          changePercent: Math.round(bankChangePercent * 100) / 100,
+          stockCount: bankStocks.length,
         },
         niftyNext50: {
-          value: Math.round(58000 + (avgChange * 150)),
-          change: Math.round(avgChange * 0.8 * 100) / 100 * 150,
-          changePercent: Math.round(avgChange * 0.8 * 100) / 100,
+          value: Math.round(niftyValue * 1.1 * 10) / 10,
+          change: Math.round(niftyChange * 1.1 * 100) / 100,
+          changePercent: Math.round(niftyChangePercent * 1.1 * 100) / 100,
         },
       },
       breadth: {

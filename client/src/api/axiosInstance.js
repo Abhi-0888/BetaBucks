@@ -43,10 +43,15 @@ axiosInstance.interceptors.response.use(
       toast.error('Session expired. Please login again.');
       window.location.href = '/login';
     } else if (status === 429) {
-      toast.error('Too many requests. Please slow down.');
+      // Throttle 429 toast — show at most once per 5s
+      const now = Date.now();
+      if (!window._last429Toast || now - window._last429Toast > 5000) {
+        toast.error('Too many requests. Please slow down.');
+        window._last429Toast = now;
+      }
     } else if (status >= 500) {
       toast.error('Server error. Please try again later.');
-    } else if (message) {
+    } else if (message && status !== 429) {
       toast.error(message);
     }
 
